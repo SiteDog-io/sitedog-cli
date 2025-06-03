@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>SiteDog Demo</title>
+    <link rel="stylesheet" href="https://sitedog.io/css/cards.css" />
+    <style>
+      #card-container {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      #config {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>SiteDog Demo Page</h1>
+    <div id="card-container"></div>
+    <script src="https://sitedog.io/js/renderCards.js"></script>
+    <script>
+      const cardContainer = document.getElementById("card-container");
+      let lastConfig = null;
+
+      function updateCards(config) {
+        if (JSON.stringify(config) !== JSON.stringify(lastConfig)) {
+          lastConfig = config;
+          renderCards(config, cardContainer);
+        }
+      }
+
+      // Long polling для проверки обновлений
+      function checkForUpdates() {
+        fetch('/config')
+          .then(response => response.json())
+          .then(config => {
+            updateCards(config);
+            // Продолжаем опрос
+            setTimeout(checkForUpdates, 100);
+          })
+          .catch(error => {
+            console.error('Error checking for updates:', error);
+            // При ошибке пробуем снова через 5 секунд
+            setTimeout(checkForUpdates, 5000);
+          });
+      }
+
+      // Запускаем проверку обновлений
+      checkForUpdates();
+    </script>
+  </body>
+</html>
