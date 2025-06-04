@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 set -e
 
@@ -9,14 +9,14 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Определяем тип системы
-if [[ "$OSTYPE" == "darwin"* ]]; then
+if [ "$(uname)" = "Darwin" ]; then
     IS_MACOS=true
 else
     IS_MACOS=false
 fi
 
 # Проверяем наличие Ruby
-if ! command -v ruby &> /dev/null; then
+if ! ruby -v >/dev/null 2>&1; then
     echo -e "${RED}Error: Ruby is not installed${NC}"
     if [ "$IS_MACOS" = true ]; then
         echo "On macOS, Ruby comes pre-installed. If you're seeing this error, please install Ruby:"
@@ -80,7 +80,9 @@ else
     fi
 
     # Проверяем, что директория в PATH
-    if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
+    if echo ":$PATH:" | grep -q ":$INSTALL_DIR:"; then
+        :
+    else
         echo -e "${YELLOW}Warning: $INSTALL_DIR is not in your PATH${NC}"
         echo "Add this line to your $SHELL_RC:"
         echo -e "${GREEN}export PATH=\"\$PATH:$INSTALL_DIR\"${NC}"
