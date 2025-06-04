@@ -11,9 +11,8 @@ run:
 	ruby sitedog.rb
 
 push:
-	@if [ ! -d "sitedog_gist" ]; then \
-		git clone git@gist.github.com:a85deab4772d1c825602ea64e0c035bc.git sitedog_gist; \
-	fi
+	rm -rf sitedog_gist
+	git clone git@gist.github.com:fe278d331980a1ce09c3d946bbf0b83b.git sitedog_gist; \
 	cp sitedog.rb demo.html.erb sitedog_gist/
 	cd sitedog_gist && \
 	if git diff --quiet; then \
