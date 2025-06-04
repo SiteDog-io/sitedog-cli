@@ -48,4 +48,14 @@ else
     echo -e "${YELLOW}No templates directory found${NC}"
 fi
 
+# Удаляем Go-бинарник
+if [ -f "/usr/local/bin/sitedog" ]; then
+    sudo rm -f /usr/local/bin/sitedog
+    echo "Removed Go binary from /usr/local/bin/sitedog"
+fi
+if [ -f "$HOME/.local/bin/sitedog" ]; then
+    rm -f "$HOME/.local/bin/sitedog"
+    echo "Removed Go binary from $HOME/.local/bin/sitedog"
+fi
+
 echo -e "${GREEN}SiteDog has been uninstalled successfully!${NC}" 

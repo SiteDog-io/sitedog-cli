@@ -31,13 +31,13 @@ fi
 TMP_DIR=$(mktemp -d)
 cd "$TMP_DIR"
 
-# Скачиваем sitedog.rb
+# Скачиваем sitedog
 echo "Downloading sitedog..."
-curl -sL https://gist.github.com/qelphybox/fe278d331980a1ce09c3d946bbf0b83b/raw/sitedog.rb -o sitedog.rb
+curl -sL https://gist.github.com/qelphybox/fe278d331980a1ce09c3d946bbf0b83b/raw/sitedog -o sitedog
 
 # Проверяем, что файл скачался
-if [ ! -f sitedog.rb ]; then
-    echo -e "${RED}Error: Failed to download sitedog.rb${NC}"
+if [ ! -f sitedog ]; then
+    echo -e "${RED}Error: Failed to download sitedog${NC}"
     exit 1
 fi
 
@@ -52,12 +52,12 @@ if [ ! -f demo.html.erb ]; then
 fi
 
 # Делаем файл исполняемым
-chmod +x sitedog.rb
+chmod +x sitedog
 
 # Определяем директорию для установки
 if [ -w "/usr/local/bin" ]; then
     INSTALL_DIR="/usr/local/bin"
-    cp sitedog.rb "$INSTALL_DIR/sitedog"
+    cp sitedog "$INSTALL_DIR/sitedog"
 else
     # Устанавливаем в домашнюю директорию
     if [ "$IS_MACOS" = true ]; then
@@ -66,7 +66,7 @@ else
         INSTALL_DIR="$HOME/.local/bin"
     fi
     mkdir -p "$INSTALL_DIR"
-    cp sitedog.rb "$INSTALL_DIR/sitedog"
+    cp sitedog "$INSTALL_DIR/sitedog"
     
     # Определяем конфигурационный файл оболочки
     if [ -f "$HOME/.zshrc" ]; then
