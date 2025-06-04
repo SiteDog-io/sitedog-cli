@@ -51,8 +51,8 @@ class SiteDog
     case command
     when 'init'
       init
-    when 'demo'
-      demo
+    when 'live'
+      live
     when 'help', nil
       show_help
     else
@@ -81,12 +81,12 @@ class SiteDog
     puts "Created #{config_path} configuration file"
   end
 
-  def self.demo
+  def self.live
     config_path = DEFAULT_CONFIG_PATH
     port = DEFAULT_PORT
 
     OptionParser.new do |opts|
-      opts.banner = "Usage: sitedog demo [options]"
+      opts.banner = "Usage: sitedog live [options]"
       opts.on("--config PATH", "Path to config file (default: #{DEFAULT_CONFIG_PATH})") do |path|
         config_path = path
       end
@@ -118,7 +118,7 @@ class SiteDog
     end
 
 
-    puts "Starting demo server at http://localhost:#{port}"
+    puts "Starting live server at http://localhost:#{port}"
     puts "Press Ctrl+C to stop"
 
     # Открываем браузер
@@ -140,11 +140,11 @@ class SiteDog
     puts "Usage: sitedog <command>"
     puts "\nCommands:"
     puts "  init    Create sitedog.yml configuration file"
-    puts "  demo    Start demo server with temporary page"
+    puts "  live    Start live server with temporary page"
     puts "  help    Show this help message"
     puts "\nOptions for init:"
     puts "  --config PATH    Path to config file (default: #{DEFAULT_CONFIG_PATH})"
-    puts "\nOptions for demo:"
+    puts "\nOptions for live:"
     puts "  --config PATH    Path to config file (default: #{DEFAULT_CONFIG_PATH})"
     puts "  --port PORT      Port to run server on (default: #{DEFAULT_PORT})"
   end
@@ -163,5 +163,5 @@ end
 begin
   SiteDog.run
 rescue SystemExit, Interrupt
-  puts "Stopping demo server..."
+  puts "Stopping live server..."
 end
