@@ -33,7 +33,7 @@ cd "$TMP_DIR"
 
 # Скачиваем sitedog.rb
 echo "Downloading sitedog..."
-curl -sL https://gist.github.com/qelphybox/fe278d331980a1ce09c3d946bbf0b83b/raw/434a650881c4355a4a2fd9cb19efbee40be54ec1/sitedog.rb -o sitedog.rb
+curl -sL https://gist.github.com/qelphybox/a85deab4772d1c825602ea64e0c035bc/raw/sitedog.rb -o sitedog.rb
 
 # Проверяем, что файл скачался
 if [ ! -f sitedog.rb ]; then
@@ -43,7 +43,7 @@ fi
 
 # Скачиваем шаблон demo.html.erb
 echo "Downloading demo template..."
-curl -sL https://gist.github.com/qelphybox/fe278d331980a1ce09c3d946bbf0b83b/raw/434a650881c4355a4a2fd9cb19efbee40be54ec1/demo.html.erb -o demo.html.erb
+curl -sL https://gist.github.com/qelphybox/a85deab4772d1c825602ea64e0c035bc/raw/demo.html.erb -o demo.html.erb
 
 # Проверяем, что шаблон скачался
 if [ ! -f demo.html.erb ]; then
