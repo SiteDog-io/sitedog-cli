@@ -28,9 +28,22 @@ class SiteDog
     mail: zoho # mail service
   YAML
 
-  TEMPLATE_PATH = 'demo.html.erb'
+  DEFAULT_TEMPLATE = 'demo.html.erb'
   DEFAULT_PORT = 8081
   DEFAULT_CONFIG_PATH = './sitedog.yml'
+
+  def self.find_template
+    local_template = File.join(Dir.pwd, DEFAULT_TEMPLATE)
+    global_template = File.expand_path("~/.sitedog/#{DEFAULT_TEMPLATE}")
+
+    if File.exist?(local_template)
+      local_template
+    elsif File.exist?(global_template)
+      global_template
+    else
+      raise "Template not found."
+    end
+  end
 
   def self.run
     command = ARGV[0]
@@ -89,7 +102,7 @@ class SiteDog
 
     # Настраиваем и запускаем сервер
     server = WEBrick::HTTPServer.new(Port: port, AccessLog: [])
-    template = ERB.new(File.read(TEMPLATE_PATH))
+    template = ERB.new(File.read(find_template))
 
     server.mount_proc('/') do |req, res|
       config = YAML.load_file(config_path)
