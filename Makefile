@@ -11,7 +11,8 @@ help:
 push:
 	rm -rf sitedog_gist
 	git clone git@gist.github.com:fe278d331980a1ce09c3d946bbf0b83b.git sitedog_gist; \
-	cp sitedog install.sh uninstall.sh demo.html.erb sitedog_gist/
+	cp install.sh uninstall.sh demo.html.erb sitedog_gist/
+	cp sitedog.bin sitedog_gist/sitedog
 	cd sitedog_gist && \
 	if git diff --quiet; then \
 		echo "No changes to deploy"; \

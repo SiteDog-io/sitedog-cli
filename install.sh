@@ -8,25 +8,6 @@ RED='\033[0;31m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-# Определяем тип системы
-if [ "$(uname)" = "Darwin" ]; then
-    IS_MACOS=true
-else
-    IS_MACOS=false
-fi
-
-# Проверяем наличие Ruby
-if ! ruby -v >/dev/null 2>&1; then
-    echo -e "${RED}Error: Ruby is not installed${NC}"
-    if [ "$IS_MACOS" = true ]; then
-        echo "On macOS, Ruby comes pre-installed. If you're seeing this error, please install Ruby:"
-        echo "brew install ruby"
-    else
-        echo "Please install Ruby first: https://www.ruby-lang.org/en/downloads/"
-    fi
-    exit 1
-fi
-
 # Создаем временную директорию
 TMP_DIR=$(mktemp -d)
 cd "$TMP_DIR"
@@ -54,51 +35,47 @@ fi
 # Делаем файл исполняемым
 chmod +x sitedog
 
-# Определяем директорию для установки
-if [ -w "/usr/local/bin" ]; then
-    INSTALL_DIR="/usr/local/bin"
-    cp sitedog "$INSTALL_DIR/sitedog"
-else
-    # Устанавливаем в домашнюю директорию
-    if [ "$IS_MACOS" = true ]; then
-        INSTALL_DIR="$HOME/bin"
-    else
-        INSTALL_DIR="$HOME/.local/bin"
-    fi
-    mkdir -p "$INSTALL_DIR"
-    cp sitedog "$INSTALL_DIR/sitedog"
-    
-    # Определяем конфигурационный файл оболочки
-    if [ -f "$HOME/.zshrc" ]; then
-        SHELL_RC="$HOME/.zshrc"
-    elif [ -f "$HOME/.bash_profile" ]; then
-        SHELL_RC="$HOME/.bash_profile"
-    elif [ -f "$HOME/.bashrc" ]; then
-        SHELL_RC="$HOME/.bashrc"
-    else
-        SHELL_RC="$HOME/.bash_profile"
-    fi
-
-    # Проверяем, что директория в PATH
-    if echo ":$PATH:" | grep -q ":$INSTALL_DIR:"; then
-        :
-    else
-        echo -e "${YELLOW}Warning: $INSTALL_DIR is not in your PATH${NC}"
-        echo "Add this line to your $SHELL_RC:"
-        echo -e "${GREEN}export PATH=\"\$PATH:$INSTALL_DIR\"${NC}"
-        echo "Then run: source $SHELL_RC"
-    fi
-fi
+# Устанавливаем бинарник в ~/.sitedog/bin
+INSTALL_DIR="$HOME/.sitedog/bin"
+mkdir -p "$INSTALL_DIR"
+cp sitedog "$INSTALL_DIR/sitedog"
+echo "Installed sitedog to $INSTALL_DIR/sitedog"
 
 # Создаем директорию для шаблонов и копируем demo.html.erb
 TEMPLATES_DIR="$HOME/.sitedog"
 mkdir -p "$TEMPLATES_DIR"
 cp demo.html.erb "$TEMPLATES_DIR/"
 
+# Добавляем ~/.sitedog/bin в PATH, если его там нет
+SHELL_NAME=$(basename "$SHELL")
+case "$SHELL_NAME" in
+    zsh)
+        RC_FILE="$HOME/.zshrc"
+        ;;
+    bash)
+        RC_FILE="$HOME/.bashrc"
+        ;;
+    fish)
+        RC_FILE="$HOME/.config/fish/config.fish"
+        ;;
+    *)
+        RC_FILE="$HOME/.profile"
+        ;;
+esac
+
+if ! echo "$PATH" | grep -q "$INSTALL_DIR"; then
+    echo "\n# Added by sitedog installer" >> "$RC_FILE"
+    echo "export PATH=\"$INSTALL_DIR:\$PATH\"" >> "$RC_FILE"
+    echo "${GREEN}Added $INSTALL_DIR to PATH in $RC_FILE${NC}"
+    # shellcheck disable=SC1090
+    . "$RC_FILE"
+else
+    echo "${YELLOW}$INSTALL_DIR already in PATH${NC}"
+fi
+
 # Очищаем временную директорию
 cd - > /dev/null
 rm -rf "$TMP_DIR"
 
-echo -e "${GREEN}SiteDog has been installed successfully!${NC}"
-echo "You can now use 'sitedog' command from anywhere."
+echo "${GREEN}SiteDog has been installed successfully!${NC}"
 echo "Try: sitedog help" 
