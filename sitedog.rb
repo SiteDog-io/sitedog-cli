@@ -163,5 +163,5 @@ end
 begin
   SiteDog.run
 rescue SystemExit, Interrupt
-  puts "Stopping live server..."
+  # do nothing
 end
