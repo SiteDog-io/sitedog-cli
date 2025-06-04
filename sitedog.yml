@@ -1,7 +1,0 @@
-# Describe your project with a free key-value format, be strict:
-#
-12312312:
-  registrar: asdf # registrar service
-  dns: Route 53 # dns2 service
-  hosting: https://carrd.com # hosting service
-  mail: zoho # mail service

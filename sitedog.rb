@@ -28,9 +28,9 @@ class SiteDog
     mail: zoho # mail service
   YAML
 
-  TEMP_HTML = 'demo.html'
   TEMPLATE_PATH = 'demo.html.erb'
   DEFAULT_PORT = 8081
+  DEFAULT_CONFIG_PATH = './sitedog.yml'
 
   def self.run
     command = ARGV[0]
@@ -50,11 +50,11 @@ class SiteDog
   end
 
   def self.init
-    config_path = './sitedog.yml'
+    config_path = DEFAULT_CONFIG_PATH
 
     OptionParser.new do |opts|
       opts.banner = "Usage: sitedog init [options]"
-      opts.on("--config PATH", "Path to config file (default: ./sitedog.yml)") do |path|
+      opts.on("--config PATH", "Path to config file (default: #{DEFAULT_CONFIG_PATH})") do |path|
         config_path = path
       end
     end.parse!
@@ -69,12 +69,12 @@ class SiteDog
   end
 
   def self.demo
-    config_path = './sitedog.yml'
+    config_path = DEFAULT_CONFIG_PATH
     port = DEFAULT_PORT
 
     OptionParser.new do |opts|
       opts.banner = "Usage: sitedog demo [options]"
-      opts.on("--config PATH", "Path to config file (default: ./sitedog.yml)") do |path|
+      opts.on("--config PATH", "Path to config file (default: #{DEFAULT_CONFIG_PATH})") do |path|
         config_path = path
       end
       opts.on("--port PORT", Integer, "Port to run server on (default: #{DEFAULT_PORT})") do |p|
@@ -130,9 +130,9 @@ class SiteDog
     puts "  demo    Start demo server with temporary page"
     puts "  help    Show this help message"
     puts "\nOptions for init:"
-    puts "  --config PATH    Path to config file (default: ./sitedog.yml)"
+    puts "  --config PATH    Path to config file (default: #{DEFAULT_CONFIG_PATH})"
     puts "\nOptions for demo:"
-    puts "  --config PATH    Path to config file (default: ./sitedog.yml)"
+    puts "  --config PATH    Path to config file (default: #{DEFAULT_CONFIG_PATH})"
     puts "  --port PORT      Port to run server on (default: #{DEFAULT_PORT})"
   end
 end
