@@ -1,14 +1,10 @@
-.PHONY: run help push push-install-prod
+.PHONY: help push push-install-prod
 
 help:
 	@echo "Available commands:"
-	@echo "  run    - Run Ruby script sitedog.rb"
 	@echo "  help   - Show this help message"
 	@echo "  push   - Update files in gist"
 	@echo "  push-install-prod - TODO: put install.sh to get.sitedog.io"
-
-run:
-	ruby sitedog.rb
 
 push:
 	rm -rf sitedog_gist
