@@ -1,3 +1,6 @@
 sitedog.yml
 sitedog_gist
+dist/
 sitedog.bin
+sitedog.arm64
+sitedog.bin.*

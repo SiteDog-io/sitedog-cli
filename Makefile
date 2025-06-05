@@ -1,4 +1,4 @@
-.PHONY: help push push-install-prod build
+.PHONY: help push push-install-prod build-docker
 
 help:
 	@echo "Available commands:"
@@ -22,10 +22,10 @@ push:
 		git push; \
 	fi
 
-build:
-	go build -o sitedog.bin main.go
-
 push-install-prod:
 	# TODO: put install.sh to get.sitedog.io
+
+build:
+	docker run --rm -v $(PWD):/app -w /app golang:1.20-alpine sh -c "./build.sh"
 
 .DEFAULT_GOAL := help
