@@ -29,4 +29,6 @@ push-install-prod:
 build:
 	docker run --rm -v $(PWD):/app -w /app golang:1.20-alpine sh -c "./scripts/build.sh"
 
+push!: build push
+
 .DEFAULT_GOAL := help
