@@ -23,7 +23,3 @@ make push
 ```
 
 Docs: [sitedog.io](https://sitedog.io/) · [gist](https://gist.github.com/qelphybox/fe278d331980a1ce09c3d946bbf0b83b)
-
----
-
-© rbbr.io, 2024
