@@ -10,9 +10,10 @@ help:
 
 push:
 	rm -rf sitedog_gist
-	git clone git@gist.github.com:fe278d331980a1ce09c3d946bbf0b83b.git sitedog_gist; \
-	cp install.sh uninstall.sh demo.html.erb sitedog_gist/
-	cp sitedog.bin sitedog_gist/sitedog
+	git clone git@gist.github.com:fe278d331980a1ce09c3d946bbf0b83b.git sitedog_gist
+	rm -rf sitedog_gist/*
+	cp dist/* sitedog_gist/
+	cp demo.html.erb scripts/install.sh scripts/uninstall.sh sitedog_gist/
 	cd sitedog_gist && \
 	if git diff --quiet; then \
 		echo "No changes to deploy"; \
@@ -26,6 +27,6 @@ push-install-prod:
 	# TODO: put install.sh to get.sitedog.io
 
 build:
-	docker run --rm -v $(PWD):/app -w /app golang:1.20-alpine sh -c "./build.sh"
+	docker run --rm -v $(PWD):/app -w /app golang:1.20-alpine sh -c "./scripts/build.sh"
 
 .DEFAULT_GOAL := help
