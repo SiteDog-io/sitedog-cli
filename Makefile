@@ -2,11 +2,11 @@
 
 help:
 	@echo "Available commands:"
-	@echo "  help   - Show this help message"
-	@echo "  push   - Update files in gist"
-	@echo "  build - Build Go binary"
-	@echo "  install - Install Go binary globally (to ~/.local/bin or /usr/local/bin)"
-	@echo "  uninstall - Remove Go binary from system"
+	@echo "  help                - Show this help message"
+	@echo "  build               - Build all Go binaries for all platforms (in Docker, output to ./dist)"
+	@echo "  push                - Update files in gist (binaries from ./dist, install/uninstall scripts, etc.)"
+	@echo "  push!               - build + push"
+	@echo "  push-install-prod   - TODO: put install.sh to get.sitedog.io"
 
 push:
 	rm -rf sitedog_gist
