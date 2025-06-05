@@ -12,9 +12,26 @@ NC='\033[0m' # No Color
 TMP_DIR=$(mktemp -d)
 cd "$TMP_DIR"
 
-# Скачиваем sitedog
-echo "Downloading sitedog..."
-curl -sL https://gist.github.com/qelphybox/fe278d331980a1ce09c3d946bbf0b83b/raw/sitedog -o sitedog
+# Определяем платформу
+OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+ARCH=$(uname -m)
+
+case "$ARCH" in
+    x86_64|amd64) ARCH="amd64" ;;
+    aarch64|arm64) ARCH="arm64" ;;
+    *) echo "Unsupported architecture: $ARCH"; exit 1 ;;
+esac
+
+case "$OS" in
+    linux) BIN_NAME="sitedog-linux-$ARCH" ;;
+    darwin) BIN_NAME="sitedog-darwin-$ARCH" ;;
+    *) echo "Unsupported OS: $OS"; exit 1 ;;
+esac
+
+echo "Detected platform: $OS/$ARCH"
+echo "Downloading $BIN_NAME..."
+
+curl -sL "https://gist.github.com/qelphybox/fe278d331980a1ce09c3d946bbf0b83b/raw/$BIN_NAME" -o sitedog
 
 # Проверяем, что файл скачался
 if [ ! -f sitedog ]; then
