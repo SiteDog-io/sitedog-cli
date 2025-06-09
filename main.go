@@ -108,7 +108,7 @@ func handleLive() {
 		yaml.Unmarshal(config, &data)
 		
 		// Извлекаем только верхнеуровневые ключи в порядке их появления в YAML файле
-		re := regexp.MustCompile(`(?m)^([a-zA-Z0-9_.]+):`)
+		re := regexp.MustCompile(`(?m)^([^\s].*):\s*\n`)
 		matches := re.FindAllStringSubmatch(string(config), -1)
 		orderedKeys := make([]string, 0, len(matches))
 		for _, match := range matches {
