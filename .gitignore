@@ -1,3 +1,6 @@
 sitedog.yml
 sitedog_gist
 dist/
+tmp/
+AGENTS.md
+.cursor/rules/agents-instruction.mdc

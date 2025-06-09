@@ -100,6 +100,13 @@
         box-sizing: border-box;
       }
 
+      .error-message {
+        text-align: center;
+        color: var(--error-color);
+        padding: 1rem;
+        font-size: 0.9rem;
+      }
+
       #config {
         display: none;
       }
@@ -122,7 +129,11 @@
       function updateCards(config) {
         if (JSON.stringify(config) !== JSON.stringify(lastConfig)) {
           lastConfig = config;
-          renderCards(config, cardContainer);
+          renderCards(config, cardContainer, (config, result, error) => {
+            if (!result) {
+              cardContainer.innerHTML = `<div class="error-message">YAML Error: ${error}</div>`;
+            }
+          });
         }
       }
 
