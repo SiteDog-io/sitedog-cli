@@ -117,10 +117,6 @@ func handleLive() {
 			}
 		}
 
-		// Отладочная информация
-		fmt.Printf("Found matches: %v\n", matches)
-		fmt.Printf("Ordered keys: %v\n", orderedKeys)
-
 		// Создаем структуру ответа
 		response := struct {
 			Config      map[string]interface{} `json:"config"`
