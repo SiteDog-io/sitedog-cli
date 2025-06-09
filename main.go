@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"os/user"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -105,8 +106,32 @@ func handleLive() {
 		config, _ := ioutil.ReadFile(*configFile)
 		var data map[string]interface{}
 		yaml.Unmarshal(config, &data)
+		
+		// Извлекаем только верхнеуровневые ключи в порядке их появления в YAML файле
+		re := regexp.MustCompile(`(?m)^([a-zA-Z0-9_.]+):`)
+		matches := re.FindAllStringSubmatch(string(config), -1)
+		orderedKeys := make([]string, 0, len(matches))
+		for _, match := range matches {
+			if len(match) > 1 {
+				orderedKeys = append(orderedKeys, match[1])
+			}
+		}
+
+		// Отладочная информация
+		fmt.Printf("Found matches: %v\n", matches)
+		fmt.Printf("Ordered keys: %v\n", orderedKeys)
+
+		// Создаем структуру ответа
+		response := struct {
+			Config      map[string]interface{} `json:"config"`
+			OrderedKeys []string               `json:"orderedKeys"`
+		}{
+			Config:      data,
+			OrderedKeys: orderedKeys,
+		}
+
 		w.Header().Set("Content-Type", "application/json")
-		jsonData, _ := json.Marshal(data)
+		jsonData, _ := json.Marshal(response)
 		w.Write(jsonData)
 	})
 

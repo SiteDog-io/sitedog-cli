@@ -126,14 +126,14 @@
       const cardContainer = document.getElementById("card-container");
       let lastConfig = null;
 
-      function updateCards(config) {
+      function updateCards(config, orderedKeys) {
         if (JSON.stringify(config) !== JSON.stringify(lastConfig)) {
           lastConfig = config;
           renderCards(config, cardContainer, (config, result, error) => {
             if (!result) {
               cardContainer.innerHTML = `<div class="error-message">YAML Error: ${error}</div>`;
             }
-          });
+          }, orderedKeys);
         }
       }
 
@@ -141,8 +141,8 @@
       function checkForUpdates() {
         fetch('/config')
           .then(response => response.json())
-          .then(config => {
-            updateCards(config);
+          .then(({config, orderedKeys}) => {
+            updateCards(config, orderedKeys);
             // Продолжаем опрос
             setTimeout(checkForUpdates, 100);
           })
