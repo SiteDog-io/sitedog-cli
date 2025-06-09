@@ -26,9 +26,17 @@ fi
 # Удаляем ~/.sitedog/bin из PATH во всех популярных rc-файлах
 for RC in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.profile" "$HOME/.bash_profile" "$HOME/.config/fish/config.fish"; do
     if [ -f "$RC" ]; then
-        # Удаляем все варианты добавления ~/.sitedog/bin в PATH
-        sed -i.bak '/sitedog\/bin.*PATH/d' "$RC"
-        sed -i '/# Added by sitedog installer/d' "$RC"
+        # Определяем ОС для корректного использования sed
+        case "$(uname)" in
+            Darwin*)
+                sed -i '' '/sitedog\/bin.*PATH/d' "$RC"
+                sed -i '' '/# Added by sitedog installer/d' "$RC"
+                ;;
+            *)
+                sed -i.bak '/sitedog\/bin.*PATH/d' "$RC"
+                sed -i '/# Added by sitedog installer/d' "$RC"
+                ;;
+        esac
         # shellcheck disable=SC1090
         . "$RC"
     fi
