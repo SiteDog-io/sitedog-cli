@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -9,10 +11,14 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"os/signal"
 	"os/user"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"time"
+
+	"github.com/go-shiori/obelisk"
 )
 
 const (
@@ -44,6 +50,8 @@ func main() {
 		handleLive()
 	case "push":
 		handlePush()
+	case "render":
+		handleRender()
 	case "help":
 		showHelp()
 	default:
@@ -59,6 +67,7 @@ Commands:
   init    Create sitedog.yml configuration file
   live    Start live server with preview
   push    Push configuration to cloud
+  render  Render template to HTML
   help    Show this help message
 
 Options for init:
@@ -87,27 +96,21 @@ func handleInit() {
 	fmt.Println("Created", *configFile, "configuration file")
 }
 
-func handleLive() {
-	liveFlags := flag.NewFlagSet("live", flag.ExitOnError)
-	configFile := liveFlags.String("config", defaultConfigPath, "Path to config file")
-	port := liveFlags.Int("port", defaultPort, "Port to run server on")
-	liveFlags.Parse(os.Args[2:])
-
-	if _, err := os.Stat(*configFile); err != nil {
-		fmt.Println("Error:", *configFile, "not found. Run 'sitedog init' first.")
-		os.Exit(1)
-	}
-
-	templatePath := findTemplate()
-	
-	// Обработчик для главной страницы
+func startServer(configFile *string) (*http.Server, string) {
+	// Обработчики
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		tmpl, _ := ioutil.ReadFile(templatePath)
+		config, err := ioutil.ReadFile(*configFile)
+		if err != nil {
+			http.Error(w, "Error reading config", http.StatusInternalServerError)
+			return
+		}
+
+		tmpl, _ := ioutil.ReadFile(findTemplate())
+		tmpl = bytes.Replace(tmpl, []byte("{{CONFIG}}"), config, -1)
 		w.Header().Set("Content-Type", "text/html")
 		w.Write(tmpl)
 	})
 
-	// Обработчик для конфига
 	http.HandleFunc("/config", func(w http.ResponseWriter, r *http.Request) {
 		config, err := ioutil.ReadFile(*configFile)
 		if err != nil {
@@ -118,14 +121,53 @@ func handleLive() {
 		w.Write(config)
 	})
 
-	addr := fmt.Sprintf(":%d", *port)
+	// Запускаем сервер
+	server := &http.Server{
+		Addr: ":8081",
+	}
+
+	// Запускаем сервер в горутине
+	go func() {
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatal(err)
+		}
+	}()
+
+	// Ждем запуска сервера
+	time.Sleep(1 * time.Second)
+
+	return server, ":8081"
+}
+
+func handleLive() {
+	liveFlags := flag.NewFlagSet("live", flag.ExitOnError)
+	configFile := liveFlags.String("config", defaultConfigPath, "Path to config file")
+	liveFlags.Parse(os.Args[2:])
+
+	if _, err := os.Stat(*configFile); err != nil {
+		fmt.Println("Error:", *configFile, "not found. Run 'sitedog init' first.")
+		os.Exit(1)
+	}
+
+	server, addr := startServer(configFile)
+	url := "http://localhost" + addr
+
 	go func() {
 		time.Sleep(500 * time.Millisecond)
-		openBrowser("http://localhost" + addr)
+		openBrowser(url)
 	}()
-	fmt.Println("Starting live server at http://localhost" + addr)
+	fmt.Println("Starting live server at", url)
 	fmt.Println("Press Ctrl+C to stop")
-	log.Fatal(http.ListenAndServe(addr, nil))
+
+	// Ждем сигнала завершения
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+	<-sigChan
+
+	// Корректно завершаем сервер
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	server.Shutdown(ctx)
 }
 
 func findTemplate() string {
@@ -296,4 +338,66 @@ func pushConfig(token, name, content string) error {
 	}
 
 	return nil
+}
+
+func handleRender() {
+	renderFlags := flag.NewFlagSet("render", flag.ExitOnError)
+	configFile := renderFlags.String("config", defaultConfigPath, "Path to config file")
+	outputFile := renderFlags.String("output", "sitedog.html", "Path to output HTML file")
+	renderFlags.Parse(os.Args[2:])
+
+	if _, err := os.Stat(*configFile); err != nil {
+		fmt.Println("Error:", *configFile, "not found. Run 'sitedog init' first.")
+		os.Exit(1)
+	}
+
+	server, addr := startServer(configFile)
+	url := "http://localhost" + addr
+
+	// Проверяем доступность сервера
+	resp, err := http.Get(url)
+	if err != nil {
+		fmt.Println("Error checking server:", err)
+		server.Close()
+		os.Exit(1)
+	}
+	resp.Body.Close()
+
+	// Используем Obelisk для сохранения страницы
+	archiver := &obelisk.Archiver{
+		EnableLog:             false,
+		MaxConcurrentDownload: 10,
+	}
+
+	// Валидируем архиватор
+	archiver.Validate()
+
+	// Создаем контекст с таймаутом
+	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
+	defer cancel()
+
+	// Создаем запрос
+	req := obelisk.Request{
+		URL: url,
+	}
+
+	// Сохраняем страницу
+	html, _, err := archiver.Archive(ctx, req)
+	if err != nil {
+		fmt.Println("Error archiving page:", err)
+		server.Close()
+		os.Exit(1)
+	}
+
+	// Сохраняем результат в файл
+	if err := ioutil.WriteFile(*outputFile, html, 0644); err != nil {
+		fmt.Println("Error saving file:", err)
+		server.Close()
+		os.Exit(1)
+	}
+
+	// Закрываем сервер
+	server.Close()
+
+	fmt.Printf("Page saved to %s\n", *outputFile)
 } 

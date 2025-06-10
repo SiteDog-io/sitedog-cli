@@ -138,24 +138,29 @@
         }
       }
 
-      // Long polling для проверки обновлений
-      function checkForUpdates() {
-        fetch('/config')
-          .then(response => response.text())
-          .then(yamlText => {
-            updateCards(yamlText);
-            // Продолжаем опрос
-            setTimeout(checkForUpdates, 100);
-          })
-          .catch(error => {
-            console.error('Error checking for updates:', error);
-            // При ошибке пробуем снова через 5 секунд
-            setTimeout(checkForUpdates, 5000);
-          });
-      }
+      const staticConfig = `{{CONFIG}}`;
+      if (staticConfig !== (`{{` + `CONFIG` + `}}`) && location.hostname !== "localhost") {
+        updateCards(staticConfig);
+      } else {
+        // Long polling для проверки обновлений
+        function checkForUpdates() {
+          fetch('/config')
+            .then(response => response.text())
+            .then(yamlText => {
+              updateCards(yamlText);
+              // Продолжаем опрос
+              setTimeout(checkForUpdates, 100);
+            })
+            .catch(error => {
+              console.error('Error checking for updates:', error);
+              // При ошибке пробуем снова через 5 секунд
+              setTimeout(checkForUpdates, 5000);
+            });
+        }
 
-      // Запускаем проверку обновлений
-      checkForUpdates();
+        // Запускаем проверку обновлений
+        checkForUpdates();        
+      }
     </script>
   </body>
 </html>
