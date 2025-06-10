@@ -11,11 +11,8 @@ import (
 	"os/exec"
 	"os/user"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
-
-	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -102,41 +99,23 @@ func handleLive() {
 	}
 
 	templatePath := findTemplate()
+	
+	// Обработчик для главной страницы
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		config, _ := ioutil.ReadFile(*configFile)
 		tmpl, _ := ioutil.ReadFile(templatePath)
-		page := strings.Replace(string(tmpl), "{{CONFIG}}", string(config), -1)
 		w.Header().Set("Content-Type", "text/html")
-		w.Write([]byte(page))
+		w.Write(tmpl)
 	})
 
+	// Обработчик для конфига
 	http.HandleFunc("/config", func(w http.ResponseWriter, r *http.Request) {
-		config, _ := ioutil.ReadFile(*configFile)
-		var data map[string]interface{}
-		yaml.Unmarshal(config, &data)
-		
-		// Извлекаем только верхнеуровневые ключи в порядке их появления в YAML файле
-		re := regexp.MustCompile(`(?m)^([^\s].*):\s*\n`)
-		matches := re.FindAllStringSubmatch(string(config), -1)
-		orderedKeys := make([]string, 0, len(matches))
-		for _, match := range matches {
-			if len(match) > 1 {
-				orderedKeys = append(orderedKeys, match[1])
-			}
+		config, err := ioutil.ReadFile(*configFile)
+		if err != nil {
+			http.Error(w, "Error reading config", http.StatusInternalServerError)
+			return
 		}
-
-		// Создаем структуру ответа
-		response := struct {
-			Config      map[string]interface{} `json:"config"`
-			OrderedKeys []string               `json:"orderedKeys"`
-		}{
-			Config:      data,
-			OrderedKeys: orderedKeys,
-		}
-
 		w.Header().Set("Content-Type", "application/json")
-		jsonData, _ := json.Marshal(response)
-		w.Write(jsonData)
+		w.Write(config)
 	})
 
 	addr := fmt.Sprintf(":%d", *port)

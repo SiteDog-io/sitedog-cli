@@ -121,28 +121,29 @@
         <div id="card-container"></div>
       </div>
     </main>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
     <script src="https://sitedog.io/js/renderCards.js"></script>
     <script>
       const cardContainer = document.getElementById("card-container");
       let lastConfig = null;
 
-      function updateCards(config, orderedKeys) {
-        if (JSON.stringify(config) !== JSON.stringify(lastConfig)) {
-          lastConfig = config;
-          renderCards(config, cardContainer, (config, result, error) => {
+      function updateCards(yamlText) {
+        if (yamlText !== lastConfig) {
+          lastConfig = yamlText;
+          renderCards(yamlText, cardContainer, (config, result, error) => {
             if (!result) {
               cardContainer.innerHTML = `<div class="error-message">YAML Error: ${error}</div>`;
             }
-          }, orderedKeys);
+          });
         }
       }
 
       // Long polling для проверки обновлений
       function checkForUpdates() {
         fetch('/config')
-          .then(response => response.json())
-          .then(({config, orderedKeys}) => {
-            updateCards(config, orderedKeys);
+          .then(response => response.text())
+          .then(yamlText => {
+            updateCards(yamlText);
             // Продолжаем опрос
             setTimeout(checkForUpdates, 100);
           })
