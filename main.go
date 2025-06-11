@@ -259,7 +259,7 @@ func getAuthToken() (string, error) {
 
 	authFile := filepath.Join(usr.HomeDir, authFilePath)
 	if _, err := os.Stat(authFile); err == nil {
-		// Если файл существует, читаем токен
+		// If file exists, read the token
 		token, err := ioutil.ReadFile(authFile)
 		if err != nil {
 			return "", fmt.Errorf("error reading auth file: %v", err)
@@ -267,7 +267,7 @@ func getAuthToken() (string, error) {
 		return strings.TrimSpace(string(token)), nil
 	}
 
-	// Если файл не существует, запрашиваем авторизацию
+	// If file doesn't exist, request authorization
 	fmt.Print("Email: ")
 	var email string
 	fmt.Scanln(&email)
@@ -276,7 +276,7 @@ func getAuthToken() (string, error) {
 	var password string
 	fmt.Scanln(&password)
 
-	// Создаем запрос на авторизацию
+	// Create authorization request
 	reqBody, err := json.Marshal(map[string]string{
 		"email":    email,
 		"password": password,
@@ -302,13 +302,13 @@ func getAuthToken() (string, error) {
 		return "", fmt.Errorf("error parsing response: %v", err)
 	}
 
-	// Создаем директорию .sitedog если её нет
+	// Create .sitedog directory if it doesn't exist
 	authDir := filepath.Dir(authFile)
 	if err := os.MkdirAll(authDir, 0700); err != nil {
 		return "", fmt.Errorf("error creating auth directory: %v", err)
 	}
 
-	// Сохраняем токен
+	// Save the token
 	if err := ioutil.WriteFile(authFile, []byte(result.Token), 0600); err != nil {
 		return "", fmt.Errorf("error saving token: %v", err)
 	}
@@ -362,7 +362,7 @@ func handleRender() {
 	server, addr := startServer(configFile, port)
 	url := "http://localhost" + addr
 
-	// Проверяем доступность сервера
+	// Check server availability
 	resp, err := http.Get(url)
 	if err != nil {
 		fmt.Println("Error checking server:", err)
@@ -371,25 +371,25 @@ func handleRender() {
 	}
 	resp.Body.Close()
 
-	// Используем Obelisk для сохранения страницы
+	// Use Obelisk to save the page
 	archiver := &obelisk.Archiver{
 		EnableLog:             false,
 		MaxConcurrentDownload: 10,
 	}
 
-	// Валидируем архиватор
+	// Validate archiver
 	archiver.Validate()
 
-	// Создаем контекст с таймаутом
+	// Create context with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 	defer cancel()
 
-	// Создаем запрос
+	// Create request
 	req := obelisk.Request{
 		URL: url,
 	}
 
-	// Сохраняем страницу
+	// Save the page
 	html, _, err := archiver.Archive(ctx, req)
 	if err != nil {
 		fmt.Println("Error archiving page:", err)
@@ -397,30 +397,30 @@ func handleRender() {
 		os.Exit(1)
 	}
 
-	// Сохраняем результат в файл
+	// Save result to file
 	if err := ioutil.WriteFile(*outputFile, html, 0644); err != nil {
 		fmt.Println("Error saving file:", err)
 		server.Close()
 		os.Exit(1)
 	}
 
-	// Закрываем сервер
+	// Close server
 	server.Close()
 
 	fmt.Printf("Page saved to %s\n", *outputFile)
 }
 
 func getFaviconCache(config []byte) []byte {
-	// Парсим YAML конфиг
+	// Parse YAML config
 	var configMap map[string]interface{}
 	if err := yaml.Unmarshal(config, &configMap); err != nil {
 		return []byte("{}")
 	}
 
-	// Создаем карту для хранения favicon кэша
+	// Create map for storing favicon cache
 	faviconCache := make(map[string]string)
 
-	// Функция для извлечения домена из URL
+	// Function to extract domain from URL
 	extractDomain := func(urlStr string) string {
 		parsedURL, err := url.Parse(urlStr)
 		if err != nil {
@@ -429,16 +429,16 @@ func getFaviconCache(config []byte) []byte {
 		return parsedURL.Hostname()
 	}
 
-	// Функция для рекурсивного обхода значений
+	// Function for recursive value traversal
 	var traverseValue func(value interface{})
 	traverseValue = func(value interface{}) {
 		switch v := value.(type) {
 		case string:
-			// Проверяем, является ли строка URL
+			// Check if string is a URL
 			if strings.HasPrefix(v, "http://") || strings.HasPrefix(v, "https://") {
 				domain := extractDomain(v)
 				if domain != "" {
-					// Получаем favicon
+					// Get favicon
 					faviconURL := fmt.Sprintf("https://www.google.com/s2/favicons?domain=%s&sz=64", url.QueryEscape(domain))
 					resp, err := http.Get(faviconURL)
 					if err != nil {
@@ -447,13 +447,13 @@ func getFaviconCache(config []byte) []byte {
 					defer resp.Body.Close()
 
 					if resp.StatusCode == http.StatusOK {
-						// Читаем favicon
+						// Read favicon
 						faviconData, err := ioutil.ReadAll(resp.Body)
 						if err != nil {
 							return
 						}
 
-						// Конвертируем в base64
+						// Convert to base64
 						base64Data := base64.StdEncoding.EncodeToString(faviconData)
 						// Get content type from response headers
 						contentType := resp.Header.Get("Content-Type")
@@ -480,10 +480,10 @@ func getFaviconCache(config []byte) []byte {
 		}
 	}
 
-	// Обходим все значения в конфиге
+	// Traverse all values in config
 	traverseValue(configMap)
 
-	// Конвертируем карту в JSON
+	// Convert map to JSON
 	jsonData, err := json.Marshal(faviconCache)
 	if err != nil {
 		return []byte("{}")

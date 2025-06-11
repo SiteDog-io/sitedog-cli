@@ -2,12 +2,12 @@
 
 set -e
 
-# Цвета для вывода
+# Colors for output
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-# Удаляем бинарники из пользовательских директорий
+# Remove binaries from user directories
 if [ -f "$HOME/bin/sitedog" ]; then
     rm -f "$HOME/bin/sitedog"
     echo "Removed $HOME/bin/sitedog"
@@ -17,16 +17,16 @@ if [ -f "$HOME/.local/bin/sitedog" ]; then
     echo "Removed $HOME/.local/bin/sitedog"
 fi
 
-# Удаляем всю директорию ~/.sitedog
+# Remove entire ~/.sitedog directory
 if [ -d "$HOME/.sitedog" ]; then
     rm -rf "$HOME/.sitedog"
     echo "Removed $HOME/.sitedog directory"
 fi
 
-# Удаляем ~/.sitedog/bin из PATH во всех популярных rc-файлах
+# Remove ~/.sitedog/bin from PATH in all common rc files
 for RC in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.profile" "$HOME/.bash_profile" "$HOME/.config/fish/config.fish"; do
     if [ -f "$RC" ]; then
-        # Определяем ОС для корректного использования sed
+        # Determine OS for correct sed usage
         case "$(uname)" in
             Darwin*)
                 sed -i '' '/sitedog\/bin.*PATH/d' "$RC"

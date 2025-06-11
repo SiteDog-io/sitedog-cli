@@ -146,23 +146,23 @@
         const faviconCache = JSON.parse(`{{FAVICON_CACHE}}`);
         updateCards(staticConfig, faviconCache);
       } else {
-        // Long polling для проверки обновлений
+        // Long polling for checking updates
         function checkForUpdates() {
           fetch('/config')
             .then(response => response.json())
             .then(config => {
               updateCards(config.yaml, config.faviconCache);
-              // Продолжаем опрос
+              // Continue polling
               setTimeout(checkForUpdates, 100);
             })
             .catch(error => {
               console.error('Error checking for updates:', error);
-              // При ошибке пробуем снова через 5 секунд
+              // On error, try again after 5 seconds
               setTimeout(checkForUpdates, 5000);
             });
         }
 
-        // Запускаем проверку обновлений
+        // Start checking for updates
         checkForUpdates();        
       }
     </script>

@@ -2,17 +2,17 @@
 
 set -e
 
-# Цвета для вывода
+# Colors for output
 GREEN='\033[0;32m'
 RED='\033[0;31m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-# Создаем временную директорию
+# Create temporary directory
 TMP_DIR=$(mktemp -d)
 cd "$TMP_DIR"
 
-# Определяем платформу
+# Detect platform
 OS=$(uname -s | tr '[:upper:]' '[:lower:]')
 ARCH=$(uname -m)
 
@@ -33,37 +33,37 @@ echo "Downloading $BIN_NAME..."
 
 curl -sL "https://gist.github.com/qelphybox/fe278d331980a1ce09c3d946bbf0b83b/raw/$BIN_NAME" -o sitedog
 
-# Проверяем, что файл скачался
+# Check if file was downloaded
 if [ ! -f sitedog ]; then
     echo -e "${RED}Error: Failed to download sitedog${NC}"
     exit 1
 fi
 
-# Скачиваем шаблон demo.html.erb
+# Download demo.html.erb template
 echo "Downloading demo template..."
 curl -sL https://gist.github.com/qelphybox/fe278d331980a1ce09c3d946bbf0b83b/raw/demo.html.erb -o demo.html.erb
 
-# Проверяем, что шаблон скачался
+# Check if template was downloaded
 if [ ! -f demo.html.erb ]; then
     echo -e "${RED}Error: Failed to download demo.html.erb${NC}"
     exit 1
 fi
 
-# Делаем файл исполняемым
+# Make file executable
 chmod +x sitedog
 
-# Устанавливаем бинарник в ~/.sitedog/bin
+# Install binary to ~/.sitedog/bin
 INSTALL_DIR="$HOME/.sitedog/bin"
 mkdir -p "$INSTALL_DIR"
 cp sitedog "$INSTALL_DIR/sitedog"
 echo "Installed sitedog to $INSTALL_DIR/sitedog"
 
-# Создаем директорию для шаблонов и копируем demo.html.erb
+# Create templates directory and copy demo.html.erb
 TEMPLATES_DIR="$HOME/.sitedog"
 mkdir -p "$TEMPLATES_DIR"
 cp demo.html.erb "$TEMPLATES_DIR/"
 
-# Добавляем ~/.sitedog/bin в PATH, если его там нет
+# Add ~/.sitedog/bin to PATH if not already there
 SHELL_NAME=$(basename "$SHELL")
 case "$SHELL_NAME" in
     zsh)
@@ -90,7 +90,7 @@ else
     echo "${YELLOW}$INSTALL_DIR already in PATH${NC}"
 fi
 
-# Очищаем временную директорию
+# Clean up temporary directory
 cd - > /dev/null
 rm -rf "$TMP_DIR"
 
