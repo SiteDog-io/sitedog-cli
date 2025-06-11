@@ -127,7 +127,7 @@
       const cardContainer = document.getElementById("card-container");
       let lastConfig = null;
 
-      function updateCards(yamlText, faviconCache) {
+      function updateCards(yamlText, faviconCache = null) {
         if (yamlText !== lastConfig) {
           lastConfig = yamlText;
           renderCards(yamlText, cardContainer, (config, result, error) => {
@@ -149,9 +149,9 @@
         // Long polling for checking updates
         function checkForUpdates() {
           fetch('/config')
-            .then(response => response.json())
+            .then(response => response.text())
             .then(config => {
-              updateCards(config.yaml, config.faviconCache);
+              updateCards(config);
               // Continue polling
               setTimeout(checkForUpdates, 100);
             })

@@ -122,7 +122,8 @@ func startServer(configFile *string, port int) (*http.Server, string) {
 			http.Error(w, "Error reading config", http.StatusInternalServerError)
 			return
 		}
-		w.Header().Set("Content-Type", "application/json")
+		
+		w.Header().Set("Content-Type", "text/yaml")
 		w.Write(config)
 	})
 
@@ -407,7 +408,7 @@ func handleRender() {
 	// Close server
 	server.Close()
 
-	fmt.Printf("Page saved to %s\n", *outputFile)
+	fmt.Printf("Rendered cards saved to %s\n", *outputFile)
 }
 
 func getFaviconCache(config []byte) []byte {
