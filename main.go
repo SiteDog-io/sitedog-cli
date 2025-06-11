@@ -414,11 +414,8 @@ func getFaviconCache(config []byte) []byte {
 	// Парсим YAML конфиг
 	var configMap map[string]interface{}
 	if err := yaml.Unmarshal(config, &configMap); err != nil {
-		log.Printf("Error parsing YAML: %v", err)
 		return []byte("{}")
 	}
-
-	log.Printf("Parsed config: %+v", configMap)
 
 	// Создаем карту для хранения favicon кэша
 	faviconCache := make(map[string]string)
@@ -427,12 +424,9 @@ func getFaviconCache(config []byte) []byte {
 	extractDomain := func(urlStr string) string {
 		parsedURL, err := url.Parse(urlStr)
 		if err != nil {
-			log.Printf("Error parsing URL %s: %v", urlStr, err)
 			return ""
 		}
-		domain := parsedURL.Hostname()
-		log.Printf("Extracted domain from %s: %s", urlStr, domain)
-		return domain
+		return parsedURL.Hostname()
 	}
 
 	// Функция для рекурсивного обхода значений
@@ -442,15 +436,12 @@ func getFaviconCache(config []byte) []byte {
 		case string:
 			// Проверяем, является ли строка URL
 			if strings.HasPrefix(v, "http://") || strings.HasPrefix(v, "https://") {
-				log.Printf("Found URL: %s", v)
 				domain := extractDomain(v)
 				if domain != "" {
 					// Получаем favicon
 					faviconURL := fmt.Sprintf("https://www.google.com/s2/favicons?domain=%s&sz=64", url.QueryEscape(domain))
-					log.Printf("Fetching favicon from: %s", faviconURL)
 					resp, err := http.Get(faviconURL)
 					if err != nil {
-						log.Printf("Error fetching favicon for %s: %v", v, err)
 						return
 					}
 					defer resp.Body.Close()
@@ -459,7 +450,6 @@ func getFaviconCache(config []byte) []byte {
 						// Читаем favicon
 						faviconData, err := ioutil.ReadAll(resp.Body)
 						if err != nil {
-							log.Printf("Error reading favicon for %s: %v", v, err)
 							return
 						}
 
@@ -472,9 +462,6 @@ func getFaviconCache(config []byte) []byte {
 						}
 						dataURL := fmt.Sprintf("data:%s;base64,%s", contentType, base64Data)
 						faviconCache[v] = dataURL
-						log.Printf("Successfully cached favicon for %s", v)
-					} else {
-						log.Printf("Failed to fetch favicon for %s: status code %d", v, resp.StatusCode)
 					}
 				}
 			}
@@ -499,10 +486,8 @@ func getFaviconCache(config []byte) []byte {
 	// Конвертируем карту в JSON
 	jsonData, err := json.Marshal(faviconCache)
 	if err != nil {
-		log.Printf("Error marshaling favicon cache: %v", err)
 		return []byte("{}")
 	}
 
-	log.Printf("Final favicon cache: %s", string(jsonData))
 	return jsonData
 }
