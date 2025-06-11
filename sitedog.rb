@@ -100,7 +100,7 @@ class SiteDog
       exit 1
     end
 
-    # Настраиваем и запускаем сервер
+    # Configure and start the server
     server = WEBrick::HTTPServer.new(Port: port, AccessLog: [])
     template = ERB.new(File.read(find_template))
 
@@ -121,10 +121,10 @@ class SiteDog
     puts "Starting live server at http://localhost:#{port}"
     puts "Press Ctrl+C to stop"
 
-    # Открываем браузер
+    # Open browser
     browser_thread = Thread.new { Launchy.open("http://localhost:#{port}") }
 
-    # Очищаем временный файл при завершении
+    # Clean up temporary file on exit
     trap('INT') do
       server.shutdown
       Thread.new{sleep(5); exit(0)}

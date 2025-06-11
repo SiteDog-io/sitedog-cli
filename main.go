@@ -30,7 +30,7 @@ const (
 	defaultPort        = 8081
 	globalTemplatePath = ".sitedog/demo.html.erb"
 	authFilePath      = ".sitedog/auth"
-	apiBaseURL        = "http://localhost:4567" // Измените на реальный URL вашего API
+	apiBaseURL        = "http://localhost:4567" // Change to your actual API URL
 	exampleConfig = `# Describe your project with a free key-value format, think simple.
 #
 # Random sample:
@@ -100,7 +100,7 @@ func handleInit() {
 }
 
 func startServer(configFile *string, port int) (*http.Server, string) {
-	// Обработчики
+	// Handlers
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		config, err := ioutil.ReadFile(*configFile)
 		if err != nil {
@@ -126,20 +126,20 @@ func startServer(configFile *string, port int) (*http.Server, string) {
 		w.Write(config)
 	})
 
-	// Запускаем сервер
+	// Start the server
 	addr := fmt.Sprintf(":%d", port)
 	server := &http.Server{
 		Addr: addr,
 	}
 
-	// Запускаем сервер в горутине
+	// Start server in a goroutine
 	go func() {
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatal(err)
 		}
 	}()
 
-	// Ждем запуска сервера
+	// Wait for server to start
 	time.Sleep(1 * time.Second)
 
 	return server, addr
@@ -166,12 +166,12 @@ func handleLive() {
 	fmt.Println("Starting live server at", url)
 	fmt.Println("Press Ctrl+C to stop")
 
-	// Ждем сигнала завершения
+	// Wait for termination signal
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 	<-sigChan
 
-	// Корректно завершаем сервер
+	// Gracefully shutdown the server
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	server.Shutdown(ctx)
@@ -219,21 +219,21 @@ func handlePush() {
 		os.Exit(1)
 	}
 
-	// Получаем токен авторизации
+	// Get authorization token
 	token, err := getAuthToken()
 	if err != nil {
 		fmt.Println("Error:", err)
 		os.Exit(1)
 	}
 
-	// Читаем конфигурацию
+	// Read configuration
 	config, err := ioutil.ReadFile(*configFile)
 	if err != nil {
 		fmt.Println("Error reading config file:", err)
 		os.Exit(1)
 	}
 
-	// Получаем имя конфигурации из имени директории
+	// Get configuration name from directory name
 	dir, err := os.Getwd()
 	if err != nil {
 		fmt.Println("Error getting current directory:", err)
@@ -241,7 +241,7 @@ func handlePush() {
 	}
 	configName := filepath.Base(dir)
 
-	// Отправляем конфигурацию на сервер
+	// Send configuration to server
 	err = pushConfig(token, configName, string(config))
 	if err != nil {
 		fmt.Println("Error pushing config:", err)
