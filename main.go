@@ -3,12 +3,14 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -19,6 +21,7 @@ import (
 	"time"
 
 	"github.com/go-shiori/obelisk"
+	"gopkg.in/yaml.v2"
 )
 
 const (
@@ -105,8 +108,16 @@ func startServer(configFile *string) (*http.Server, string) {
 			return
 		}
 
+		// TODO: parse yaml config, 
+		// traverse all keys and values, 
+		// find all url strings, 
+		// get favicon for each url with https://www.google.com/s2/favicons?domain=${extractEncodedDomainFromUrl(url)}&sz=64, 
+		// convert each favicon to base64 dataurl
+		// make json with structure { url: faviconBase64DataUrl } as faviconCache
+		faviconCache := getFaviconCache(config)
 		tmpl, _ := ioutil.ReadFile(findTemplate())
 		tmpl = bytes.Replace(tmpl, []byte("{{CONFIG}}"), config, -1)
+		tmpl = bytes.Replace(tmpl, []byte("{{FAVICON_CACHE}}"), faviconCache, -1)
 		w.Header().Set("Content-Type", "text/html")
 		w.Write(tmpl)
 	})
@@ -400,4 +411,101 @@ func handleRender() {
 	server.Close()
 
 	fmt.Printf("Page saved to %s\n", *outputFile)
-} 
+}
+
+func getFaviconCache(config []byte) []byte {
+	// Парсим YAML конфиг
+	var configMap map[string]interface{}
+	if err := yaml.Unmarshal(config, &configMap); err != nil {
+		log.Printf("Error parsing YAML: %v", err)
+		return []byte("{}")
+	}
+
+	log.Printf("Parsed config: %+v", configMap)
+
+	// Создаем карту для хранения favicon кэша
+	faviconCache := make(map[string]string)
+
+	// Функция для извлечения домена из URL
+	extractDomain := func(urlStr string) string {
+		parsedURL, err := url.Parse(urlStr)
+		if err != nil {
+			log.Printf("Error parsing URL %s: %v", urlStr, err)
+			return ""
+		}
+		domain := parsedURL.Hostname()
+		log.Printf("Extracted domain from %s: %s", urlStr, domain)
+		return domain
+	}
+
+	// Функция для рекурсивного обхода значений
+	var traverseValue func(value interface{})
+	traverseValue = func(value interface{}) {
+		switch v := value.(type) {
+		case string:
+			// Проверяем, является ли строка URL
+			if strings.HasPrefix(v, "http://") || strings.HasPrefix(v, "https://") {
+				log.Printf("Found URL: %s", v)
+				domain := extractDomain(v)
+				if domain != "" {
+					// Получаем favicon
+					faviconURL := fmt.Sprintf("https://www.google.com/s2/favicons?domain=%s&sz=64", url.QueryEscape(domain))
+					log.Printf("Fetching favicon from: %s", faviconURL)
+					resp, err := http.Get(faviconURL)
+					if err != nil {
+						log.Printf("Error fetching favicon for %s: %v", v, err)
+						return
+					}
+					defer resp.Body.Close()
+
+					if resp.StatusCode == http.StatusOK {
+						// Читаем favicon
+						faviconData, err := ioutil.ReadAll(resp.Body)
+						if err != nil {
+							log.Printf("Error reading favicon for %s: %v", v, err)
+							return
+						}
+
+						// Конвертируем в base64
+						base64Data := base64.StdEncoding.EncodeToString(faviconData)
+						// Get content type from response headers
+						contentType := resp.Header.Get("Content-Type")
+						if contentType == "" {
+							contentType = "image/png" // fallback to png if no content type specified
+						}
+						dataURL := fmt.Sprintf("data:%s;base64,%s", contentType, base64Data)
+						faviconCache[v] = dataURL
+						log.Printf("Successfully cached favicon for %s", v)
+					} else {
+						log.Printf("Failed to fetch favicon for %s: status code %d", v, resp.StatusCode)
+					}
+				}
+			}
+		case map[interface{}]interface{}:
+			for _, val := range v {
+				traverseValue(val)
+			}
+		case []interface{}:
+			for _, val := range v {
+				traverseValue(val)
+			}
+		case map[string]interface{}:
+			for _, val := range v {
+				traverseValue(val)
+			}
+		}
+	}
+
+	// Обходим все значения в конфиге
+	traverseValue(configMap)
+
+	// Конвертируем карту в JSON
+	jsonData, err := json.Marshal(faviconCache)
+	if err != nil {
+		log.Printf("Error marshaling favicon cache: %v", err)
+		return []byte("{}")
+	}
+
+	log.Printf("Final favicon cache: %s", string(jsonData))
+	return jsonData
+}

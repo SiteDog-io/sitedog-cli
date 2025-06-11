@@ -127,27 +127,31 @@
       const cardContainer = document.getElementById("card-container");
       let lastConfig = null;
 
-      function updateCards(yamlText) {
+      function updateCards(yamlText, faviconCache) {
         if (yamlText !== lastConfig) {
           lastConfig = yamlText;
           renderCards(yamlText, cardContainer, (config, result, error) => {
             if (!result) {
               cardContainer.innerHTML = `<div class="error-message">YAML Error: ${error}</div>`;
             }
+          },
+          {
+            faviconCache: faviconCache,
           });
         }
       }
 
       const staticConfig = `{{CONFIG}}`;
       if (staticConfig !== (`{{` + `CONFIG` + `}}`) && location.hostname !== "localhost") {
-        updateCards(staticConfig);
+        const faviconCache = JSON.parse(`{{FAVICON_CACHE}}`);
+        updateCards(staticConfig, faviconCache);
       } else {
         // Long polling для проверки обновлений
         function checkForUpdates() {
           fetch('/config')
-            .then(response => response.text())
-            .then(yamlText => {
-              updateCards(yamlText);
+            .then(response => response.json())
+            .then(config => {
+              updateCards(config.yaml, config.faviconCache);
               // Продолжаем опрос
               setTimeout(checkForUpdates, 100);
             })
