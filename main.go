@@ -99,7 +99,7 @@ func handleInit() {
 	fmt.Println("Created", *configFile, "configuration file")
 }
 
-func startServer(configFile *string) (*http.Server, string) {
+func startServer(configFile *string, port int) (*http.Server, string) {
 	// Обработчики
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		config, err := ioutil.ReadFile(*configFile)
@@ -108,12 +108,6 @@ func startServer(configFile *string) (*http.Server, string) {
 			return
 		}
 
-		// TODO: parse yaml config, 
-		// traverse all keys and values, 
-		// find all url strings, 
-		// get favicon for each url with https://www.google.com/s2/favicons?domain=${extractEncodedDomainFromUrl(url)}&sz=64, 
-		// convert each favicon to base64 dataurl
-		// make json with structure { url: faviconBase64DataUrl } as faviconCache
 		faviconCache := getFaviconCache(config)
 		tmpl, _ := ioutil.ReadFile(findTemplate())
 		tmpl = bytes.Replace(tmpl, []byte("{{CONFIG}}"), config, -1)
@@ -133,8 +127,9 @@ func startServer(configFile *string) (*http.Server, string) {
 	})
 
 	// Запускаем сервер
+	addr := fmt.Sprintf(":%d", port)
 	server := &http.Server{
-		Addr: ":8081",
+		Addr: addr,
 	}
 
 	// Запускаем сервер в горутине
@@ -147,12 +142,13 @@ func startServer(configFile *string) (*http.Server, string) {
 	// Ждем запуска сервера
 	time.Sleep(1 * time.Second)
 
-	return server, ":8081"
+	return server, addr
 }
 
 func handleLive() {
 	liveFlags := flag.NewFlagSet("live", flag.ExitOnError)
 	configFile := liveFlags.String("config", defaultConfigPath, "Path to config file")
+	port := liveFlags.Int("port", defaultPort, "Port to run server on")
 	liveFlags.Parse(os.Args[2:])
 
 	if _, err := os.Stat(*configFile); err != nil {
@@ -160,7 +156,7 @@ func handleLive() {
 		os.Exit(1)
 	}
 
-	server, addr := startServer(configFile)
+	server, addr := startServer(configFile, *port)
 	url := "http://localhost" + addr
 
 	go func() {
@@ -361,8 +357,9 @@ func handleRender() {
 		fmt.Println("Error:", *configFile, "not found. Run 'sitedog init' first.")
 		os.Exit(1)
 	}
-
-	server, addr := startServer(configFile)
+  
+	port := 34324
+	server, addr := startServer(configFile, port)
 	url := "http://localhost" + addr
 
 	// Проверяем доступность сервера
