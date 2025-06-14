@@ -39,13 +39,13 @@ if [ ! -f sitedog ]; then
     exit 1
 fi
 
-# Download demo.html.erb template
+# Download demo.html.tpl template
 echo "Downloading demo template..."
-curl -sL https://gist.github.com/qelphybox/fe278d331980a1ce09c3d946bbf0b83b/raw/demo.html.erb -o demo.html.erb
+curl -sL https://gist.github.com/qelphybox/fe278d331980a1ce09c3d946bbf0b83b/raw/demo.html.tpl -o demo.html.tpl
 
 # Check if template was downloaded
-if [ ! -f demo.html.erb ]; then
-    echo -e "${RED}Error: Failed to download demo.html.erb${NC}"
+if [ ! -f demo.html.tpl ]; then
+    echo -e "${RED}Error: Failed to download demo.html.tpl${NC}"
     exit 1
 fi
 
@@ -58,10 +58,10 @@ mkdir -p "$INSTALL_DIR"
 cp sitedog "$INSTALL_DIR/sitedog"
 echo "Installed sitedog to $INSTALL_DIR/sitedog"
 
-# Create templates directory and copy demo.html.erb
+# Create templates directory and copy demo.html.tpl
 TEMPLATES_DIR="$HOME/.sitedog"
 mkdir -p "$TEMPLATES_DIR"
-cp demo.html.erb "$TEMPLATES_DIR/"
+cp demo.html.tpl "$TEMPLATES_DIR/"
 
 # Add ~/.sitedog/bin to PATH if not already there
 SHELL_NAME=$(basename "$SHELL")

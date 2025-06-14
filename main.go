@@ -26,9 +26,9 @@ import (
 
 const (
 	defaultConfigPath  = "./sitedog.yml"
-	defaultTemplate    = "demo.html.erb"
+	defaultTemplate    = "demo.html.tpl"
 	defaultPort        = 8081
-	globalTemplatePath = ".sitedog/demo.html.erb"
+	globalTemplatePath = ".sitedog/demo.html.tpl"
 	authFilePath       = ".sitedog/auth"
 	apiBaseURL         = "http://localhost:4567" // Change to your actual API URL
 	Version            = "v0.1.1"

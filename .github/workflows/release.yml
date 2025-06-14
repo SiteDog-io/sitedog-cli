@@ -30,7 +30,7 @@ jobs:
             dist/*
             scripts/install.sh
             scripts/uninstall.sh
-            demo.html.erb
+            demo.html.tpl
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
