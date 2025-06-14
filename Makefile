@@ -37,12 +37,10 @@ version:
 		echo "Usage: make version v=x.y.z"; \
 		exit 1; \
 	fi; \
-	file=main.go; \
-	ver=$(v); \
-	sed -i "s/Version[ ]*=[ ]*\"[^"]*\"/Version = \"$$ver\"/" $$file; \
-	git add $$file; \
-	git commit -m "bump version to $$ver"; \
-	git tag $$ver; \
-	echo "Version updated to $$ver and git tag created."
+	sed -i 's/Version[ ]*=[ ]*".*"/Version = \"$(v)\"/' main.go; \
+	git add main.go; \
+	git commit -m "bump version to $(v)"; \
+	git tag $(v); \
+	echo "Version updated to $(v) and git tag created."
 
 .DEFAULT_GOAL := help

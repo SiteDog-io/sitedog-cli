@@ -29,10 +29,10 @@ const (
 	defaultTemplate    = "demo.html.erb"
 	defaultPort        = 8081
 	globalTemplatePath = ".sitedog/demo.html.erb"
-	authFilePath      = ".sitedog/auth"
-	apiBaseURL        = "http://localhost:4567" // Change to your actual API URL
-	Version = "v0.1.0"
-	exampleConfig = `# Describe your project with a free key-value format, think simple.
+	authFilePath       = ".sitedog/auth"
+	apiBaseURL         = "http://localhost:4567" // Change to your actual API URL
+	Version            = "v0.1.1"
+	exampleConfig      = `# Describe your project with a free key-value format, think simple.
 #
 # Random sample:
 registrar: gandi # registrar service
@@ -126,7 +126,7 @@ func startServer(configFile *string, port int) (*http.Server, string) {
 			http.Error(w, "Error reading config", http.StatusInternalServerError)
 			return
 		}
-		
+
 		w.Header().Set("Content-Type", "text/yaml")
 		w.Write(config)
 	})
@@ -362,7 +362,7 @@ func handleRender() {
 		fmt.Println("Error:", *configFile, "not found. Run 'sitedog init' first.")
 		os.Exit(1)
 	}
-  
+
 	port := 34324
 	server, addr := startServer(configFile, port)
 	url := "http://localhost" + addr
