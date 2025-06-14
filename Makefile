@@ -1,4 +1,4 @@
-.PHONY: help push push-install-prod build-docker version
+.PHONY: help push push-install-prod build-docker bump-version
 
 help:
 	@echo "Available commands:"
@@ -7,7 +7,7 @@ help:
 	@echo "  push                - Update files in gist (binaries from ./dist, install/uninstall scripts, etc.)"
 	@echo "  push!               - build + push"
 	@echo "  push-install-prod   - TODO: put install.sh to get.sitedog.io"
-	@echo "  version             - Update version in main.go and create git tag"
+	@echo "  bump-version        - Update version in main.go and create git tag"
 
 push:
 	rm -rf sitedog_gist
@@ -32,12 +32,13 @@ build:
 
 push!: build push
 
-version:
+bump-version:
 	@if [ -z "$(v)" ]; then \
-		echo "Usage: make version v=x.y.z"; \
+		echo "Usage: make bump-version v=x.y.z"; \
 		exit 1; \
 	fi; \
-	sed -i 's/Version[ ]*=[ ]*".*"/Version = \"$(v)\"/' main.go; \
+	sed -i 's/Version[ ]*=[ ]*".*"/Version = "$(v)"/' main.go; \
+	go fmt main.go; \
 	git add main.go; \
 	git commit -m "bump version to $(v)"; \
 	git tag $(v); \
