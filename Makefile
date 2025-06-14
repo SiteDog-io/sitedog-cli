@@ -1,4 +1,4 @@
-.PHONY: help push push-install-prod build-docker
+.PHONY: help push push-install-prod build-docker version
 
 help:
 	@echo "Available commands:"
@@ -7,6 +7,7 @@ help:
 	@echo "  push                - Update files in gist (binaries from ./dist, install/uninstall scripts, etc.)"
 	@echo "  push!               - build + push"
 	@echo "  push-install-prod   - TODO: put install.sh to get.sitedog.io"
+	@echo "  version             - Update version in main.go and create git tag"
 
 push:
 	rm -rf sitedog_gist
@@ -30,5 +31,18 @@ build:
 	docker run --rm -v $(PWD):/app -w /app golang:1.20-alpine sh -c "./scripts/build.sh"
 
 push!: build push
+
+version:
+	@if [ -z "$(v)" ]; then \
+		echo "Usage: make version v=x.y.z"; \
+		exit 1; \
+	fi; \
+	file=main.go; \
+	ver=$(v); \
+	sed -i "s/Version[ ]*=[ ]*\"[^"]*\"/Version = \"$$ver\"/" $$file; \
+	git add $$file; \
+	git commit -m "bump version to $$ver"; \
+	git tag $$ver; \
+	echo "Version updated to $$ver and git tag created."
 
 .DEFAULT_GOAL := help

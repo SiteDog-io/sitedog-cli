@@ -31,6 +31,7 @@ const (
 	globalTemplatePath = ".sitedog/demo.html.erb"
 	authFilePath      = ".sitedog/auth"
 	apiBaseURL        = "http://localhost:4567" // Change to your actual API URL
+	Version = "v0.1.0"
 	exampleConfig = `# Describe your project with a free key-value format, think simple.
 #
 # Random sample:
@@ -55,6 +56,8 @@ func main() {
 		handlePush()
 	case "render":
 		handleRender()
+	case "version":
+		fmt.Println("sitedog version", Version)
 	case "help":
 		showHelp()
 	default:
@@ -71,6 +74,7 @@ Commands:
   live    Start live server with preview
   push    Push configuration to cloud
   render  Render template to HTML
+  version Print version
   help    Show this help message
 
 Options for init:
