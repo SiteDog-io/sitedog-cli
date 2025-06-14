@@ -23,3 +23,14 @@ make push
 ```
 
 Docs: [sitedog.io](https://sitedog.io/) · [gist](https://gist.github.com/qelphybox/fe278d331980a1ce09c3d946bbf0b83b)
+
+# Release
+
+```sh
+# bump cli version and create a git tag
+make bump-version v=v0.1.1
+
+# if everything is okay, push tag to main triggering release pipeline
+make push-version
+```
+
