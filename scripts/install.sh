@@ -31,7 +31,20 @@ esac
 echo "Detected platform: $OS/$ARCH"
 echo "Downloading $BIN_NAME..."
 
-curl -sL "https://gist.github.com/qelphybox/fe278d331980a1ce09c3d946bbf0b83b/raw/$BIN_NAME" -o sitedog
+# Download latest release from GitHub (без jq)
+REPO="SiteDog-io/sitedog-cli"
+API_URL="https://api.github.com/repos/$REPO/releases/latest"
+
+# Получаем ссылку на нужный бинарник из релиза (без jq)
+ASSET_URL=$(curl -s "$API_URL" | grep 'browser_download_url' | grep "$BIN_NAME" | head -n1 | cut -d '"' -f 4)
+
+if [ -z "$ASSET_URL" ]; then
+    echo -e "${RED}Error: Could not find asset $BIN_NAME in the latest release${NC}"
+    exit 1
+fi
+
+echo "Downloading $BIN_NAME from $ASSET_URL..."
+curl -sL "$ASSET_URL" -o sitedog
 
 # Check if file was downloaded
 if [ ! -f sitedog ]; then
@@ -39,9 +52,17 @@ if [ ! -f sitedog ]; then
     exit 1
 fi
 
-# Download demo.html.tpl template
-echo "Downloading demo template..."
-curl -sL https://gist.github.com/qelphybox/fe278d331980a1ce09c3d946bbf0b83b/raw/demo.html.tpl -o demo.html.tpl
+# Download demo.html.tpl template из того же релиза
+TPL_NAME="demo.html.tpl"
+TPL_URL=$(curl -s "$API_URL" | grep 'browser_download_url' | grep "$TPL_NAME" | head -n1 | cut -d '"' -f 4)
+
+if [ -z "$TPL_URL" ]; then
+    echo -e "${RED}Error: Could not find asset $TPL_NAME in the latest release${NC}"
+    exit 1
+fi
+
+echo "Downloading $TPL_NAME from $TPL_URL..."
+curl -sL "$TPL_URL" -o demo.html.tpl
 
 # Check if template was downloaded
 if [ ! -f demo.html.tpl ]; then
