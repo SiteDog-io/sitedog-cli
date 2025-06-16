@@ -13,7 +13,7 @@ sitedog init [--config my-config.yml]
 sitedog live [--port 3030] # http://localhost:8081 by default
 
 # Add your config to cloud dashboard
-sitedog push [--name another_config_name]
+sitedog push [--title another_config_title]
 
 # Render html file with card locally
 sitedog render [--output another_file.html] # ./sitedog.html by default

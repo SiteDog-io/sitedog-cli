@@ -86,7 +86,7 @@ Options for live:
 
 Options for push:
   --config PATH    Path to config file (default: ./sitedog.yml)
-  --name NAME      Configuration name (default: current directory name)
+  --title TITLE    Configuration title (default: current directory name)
 
 Options for render:
   --config PATH    Path to config file (default: ./sitedog.yml)
@@ -95,7 +95,7 @@ Options for render:
 Examples:
   sitedog init --config my-config.yml
   sitedog live --port 3030
-  sitedog push --name my-project
+  sitedog push --title my-project
   sitedog render --output index.html`)
 }
 
@@ -227,7 +227,7 @@ func openBrowser(url string) {
 func handlePush() {
 	pushFlags := flag.NewFlagSet("push", flag.ExitOnError)
 	configFile := pushFlags.String("config", defaultConfigPath, "Path to config file")
-	configName := pushFlags.String("name", "", "Configuration name")
+	configName := pushFlags.String("title", "", "Configuration title")
 	pushFlags.Parse(os.Args[2:])
 
 	if _, err := os.Stat(*configFile); err != nil {
