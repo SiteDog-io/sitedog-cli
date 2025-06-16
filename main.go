@@ -253,7 +253,7 @@ func handlePush() {
 		os.Exit(1)
 	}
 
-	fmt.Println("Configuration pushed successfully!")
+	fmt.Printf("Configuration '%s' pushed successfully!\n", configName)
 }
 
 func getAuthToken() (string, error) {
