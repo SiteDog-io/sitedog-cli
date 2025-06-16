@@ -3,11 +3,11 @@
 Universal CLI for static site config preview & management.
 
 ```sh
-# Install
+# Install latest version of sitedog
 curl -sL https://get.sitedog.io | sh
 
 # Init config
-touch sitedog.yml && sitedog init
+sitedog init
 
 # Live preview
 sitedog live  # http://localhost:8081
@@ -18,8 +18,8 @@ make build
 # Update gist (binaries/scripts)
 make push
 
-# Uninstall
-~/.sitedog/bin/sitedog uninstall
+# Uninstall sidedog cli
+curl -sL https://get.sitedog.io/uninstall | sh
 ```
 
 Docs: [sitedog.io](https://sitedog.io/) · [gist](https://gist.github.com/qelphybox/fe278d331980a1ce09c3d946bbf0b83b)
