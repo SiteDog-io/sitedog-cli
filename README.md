@@ -27,6 +27,9 @@ Docs: [sitedog.io](https://sitedog.io/) · [gist](https://gist.github.com/qelphy
 # Release
 
 ```sh
+# Show all created versions
+make show-versions
+
 # bump cli version and create a git tag
 make bump-version v=v0.1.1
 
