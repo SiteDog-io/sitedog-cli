@@ -45,6 +45,7 @@ bump-version:
 	echo "Version updated to $(v) and git tag created."
 
 push-version:
+	git push
 	git push --tags
 
 .DEFAULT_GOAL := help
