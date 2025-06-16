@@ -87,7 +87,16 @@ Options for live:
 Options for push:
   --config PATH    Path to config file (default: ./sitedog.yml)
   --name NAME      Configuration name (default: current directory name)
-`)
+
+Options for render:
+  --config PATH    Path to config file (default: ./sitedog.yml)
+  --output PATH    Path to output HTML file (default: sitedog.html)
+
+Examples:
+  sitedog init --config my-config.yml
+  sitedog live --port 3030
+  sitedog push --name my-project
+  sitedog render --output index.html`)
 }
 
 func handleInit() {

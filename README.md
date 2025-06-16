@@ -7,16 +7,16 @@ Universal CLI for static site config preview & management.
 curl -sL https://get.sitedog.io | sh
 
 # Init config
-sitedog init
+sitedog init [--config my-config.yml]
 
-# Live preview
-sitedog live  # http://localhost:8081
+# Live card preview on localhost
+sitedog live [--port 3030] # http://localhost:8081 by default
 
-# Build all binaries (for devs, via Docker)
-make build
+# Add your config to cloud dashboard
+sitedog push [--name another_config_name]
 
-# Update gist (binaries/scripts)
-make push
+# Render html file with card locally
+sitedog render [--output another_file.html] # ./sitedog.html by default
 
 # Uninstall sidedog cli
 curl -sL https://get.sitedog.io/uninstall | sh
