@@ -48,4 +48,7 @@ push-version:
 	git push
 	git push --tags
 
+show-versions:
+	@git tag -l
+
 .DEFAULT_GOAL := help
