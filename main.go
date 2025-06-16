@@ -352,24 +352,26 @@ func pushConfig(token, name, content string) error {
 	return nil
 }
 
+func spinner(stopSpinner chan bool, message string) {
+	spinner := []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
+	i := 0
+	for {
+		select {
+		case <-stopSpinner:
+			fmt.Print("\r")
+			return
+		default:
+			fmt.Printf("\r%s %s", spinner[i], message)
+			i = (i + 1) % len(spinner)
+			time.Sleep(100 * time.Millisecond)
+		}
+	}
+}
+
 func handleRender() {
 	// Start loading indicator
-	done := make(chan bool)
-	go func() {
-		spinner := []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
-		i := 0
-		for {
-			select {
-			case <-done:
-				fmt.Print("\r")
-				return
-			default:
-				fmt.Printf("\r%s Rendering...", spinner[i])
-				i = (i + 1) % len(spinner)
-				time.Sleep(100 * time.Millisecond)
-			}
-		}
-	}()
+	stopSpinner := make(chan bool)
+	go spinner(stopSpinner, "Rendering...")
 
 	renderFlags := flag.NewFlagSet("render", flag.ExitOnError)
 	configFile := renderFlags.String("config", defaultConfigPath, "Path to config file")
@@ -377,6 +379,7 @@ func handleRender() {
 	renderFlags.Parse(os.Args[2:])
 
 	if _, err := os.Stat(*configFile); err != nil {
+		stopSpinner <- true
 		fmt.Println("Error:", *configFile, "not found. Run 'sitedog init' first.")
 		os.Exit(1)
 	}
@@ -388,6 +391,7 @@ func handleRender() {
 	// Check server availability
 	resp, err := http.Get(url)
 	if err != nil {
+		stopSpinner <- true
 		fmt.Println("Error checking server:", err)
 		server.Close()
 		os.Exit(1)
@@ -415,21 +419,22 @@ func handleRender() {
 	// Save the page
 	html, _, err := archiver.Archive(ctx, req)
 	if err != nil {
-		done <- true
+		stopSpinner <- true
 		fmt.Println("\nError archiving page:", err)
 		server.Close()
 		os.Exit(1)
 	}
 
-	// Stop loading indicator
-	done <- true
-
 	// Save result to file
 	if err := ioutil.WriteFile(*outputFile, html, 0644); err != nil {
+		stopSpinner <- true
 		fmt.Println("Error saving file:", err)
 		server.Close()
 		os.Exit(1)
 	}
+
+	// Stop loading indicator
+	stopSpinner <- true
 
 	// Close server
 	server.Close()
