@@ -1,4 +1,4 @@
-.PHONY: help push push-install-prod build-docker bump-version
+.PHONY: help push build-docker bump-version
 
 help:
 	@echo "Available commands:"
@@ -6,8 +6,12 @@ help:
 	@echo "  build               - Build all Go binaries for all platforms (in Docker, output to ./dist)"
 	@echo "  push                - Update files in gist (binaries from ./dist, install/uninstall scripts, etc.)"
 	@echo "  push!               - build + push"
-	@echo "  push-install-prod   - TODO: put install.sh to get.sitedog.io"
 	@echo "  bump-version        - Update version in main.go and create git tag"
+	@echo "  push-version        - Push changes and tags to remote repository"
+	@echo "  show-versions       - Display all git tags"
+	@echo "  install             - Install sitedog"
+	@echo "  uninstall           - Uninstall sitedog"
+	@echo "  reinstall           - Uninstall and install sitedog"
 
 push:
 	rm -rf sitedog_gist
@@ -23,9 +27,6 @@ push:
 		git commit -m "Update sitedog files" && \
 		git push; \
 	fi
-
-push-install-prod:
-	# TODO: put install.sh to get.sitedog.io
 
 build:
 	docker run --rm -v $(PWD):/app -w /app golang:1.20-alpine sh -c "./scripts/build.sh"
@@ -50,5 +51,13 @@ push-version:
 
 show-versions:
 	@git tag -l
+
+install:
+	scripts/install.sh
+
+uninstall:
+	scripts/uninstall.sh
+
+reinstall: uninstall install
 
 .DEFAULT_GOAL := help
