@@ -86,6 +86,7 @@ Options for live:
 
 Options for push:
   --config PATH    Path to config file (default: ./sitedog.yml)
+  --name NAME      Configuration name (default: current directory name)
 `)
 }
 
@@ -217,6 +218,7 @@ func openBrowser(url string) {
 func handlePush() {
 	pushFlags := flag.NewFlagSet("push", flag.ExitOnError)
 	configFile := pushFlags.String("config", defaultConfigPath, "Path to config file")
+	configName := pushFlags.String("name", "", "Configuration name")
 	pushFlags.Parse(os.Args[2:])
 
 	if _, err := os.Stat(*configFile); err != nil {
@@ -238,22 +240,24 @@ func handlePush() {
 		os.Exit(1)
 	}
 
-	// Get configuration name from directory name
-	dir, err := os.Getwd()
-	if err != nil {
-		fmt.Println("Error getting current directory:", err)
-		os.Exit(1)
+	// Get configuration name from directory name if not specified
+	if *configName == "" {
+		dir, err := os.Getwd()
+		if err != nil {
+			fmt.Println("Error getting current directory:", err)
+			os.Exit(1)
+		}
+		*configName = filepath.Base(dir)
 	}
-	configName := filepath.Base(dir)
 
 	// Send configuration to server
-	err = pushConfig(token, configName, string(config))
+	err = pushConfig(token, *configName, string(config))
 	if err != nil {
 		fmt.Println("Error pushing config:", err)
 		os.Exit(1)
 	}
 
-	fmt.Printf("Configuration '%s' pushed successfully!\n", configName)
+	fmt.Printf("Configuration '%s' pushed successfully!\n", *configName)
 }
 
 func getAuthToken() (string, error) {
