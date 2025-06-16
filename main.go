@@ -353,6 +353,24 @@ func pushConfig(token, name, content string) error {
 }
 
 func handleRender() {
+	// Start loading indicator
+	done := make(chan bool)
+	go func() {
+		spinner := []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
+		i := 0
+		for {
+			select {
+			case <-done:
+				fmt.Print("\r")
+				return
+			default:
+				fmt.Printf("\r%s Rendering...", spinner[i])
+				i = (i + 1) % len(spinner)
+				time.Sleep(100 * time.Millisecond)
+			}
+		}
+	}()
+
 	renderFlags := flag.NewFlagSet("render", flag.ExitOnError)
 	configFile := renderFlags.String("config", defaultConfigPath, "Path to config file")
 	outputFile := renderFlags.String("output", "sitedog.html", "Path to output HTML file")
@@ -397,10 +415,14 @@ func handleRender() {
 	// Save the page
 	html, _, err := archiver.Archive(ctx, req)
 	if err != nil {
-		fmt.Println("Error archiving page:", err)
+		done <- true
+		fmt.Println("\nError archiving page:", err)
 		server.Close()
 		os.Exit(1)
 	}
+
+	// Stop loading indicator
+	done <- true
 
 	// Save result to file
 	if err := ioutil.WriteFile(*outputFile, html, 0644); err != nil {
