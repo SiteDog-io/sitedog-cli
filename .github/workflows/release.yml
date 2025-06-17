@@ -47,9 +47,9 @@ jobs:
           
       - name: Check binary version
         run: |
-          sitedog --version
+          sitedog version
           # Check that version matches the tag
-          VERSION=$(sitedog --version | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')
+          VERSION=$(sitedog version | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')
           TAG_VERSION=$(echo ${{ github.ref_name }} | sed 's/v//')
           if [ "$VERSION" != "$TAG_VERSION" ]; then
             echo "Version mismatch: binary version $VERSION != tag version $TAG_VERSION"
