@@ -107,8 +107,17 @@ if ! echo "$PATH" | grep -q "$INSTALL_DIR"; then
     echo "${GREEN}Added $INSTALL_DIR to PATH in $RC_FILE${NC}"
     # shellcheck disable=SC1090
     source "$RC_FILE"
+    # Явно добавляем путь в текущую сессию
+    export PATH="$INSTALL_DIR:$PATH"
 else
     echo "${YELLOW}$INSTALL_DIR already in PATH${NC}"
+fi
+
+# Проверяем, что бинарник доступен
+if ! command -v sitedog >/dev/null 2>&1; then
+    echo -e "${RED}Error: sitedog binary not found in PATH after installation${NC}"
+    echo "Please try running: source $RC_FILE"
+    exit 1
 fi
 
 # Clean up temporary directory
