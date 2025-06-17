@@ -86,7 +86,6 @@ Usage: sitedog <command>
 Commands:
   init    Create sitedog.yml configuration file
   live    Start live server with preview
-  push    Push configuration to cloud
   render  Render template to HTML
   version Print version
   help    Show this help message
