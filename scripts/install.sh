@@ -106,7 +106,7 @@ if ! echo "$PATH" | grep -q "$INSTALL_DIR"; then
     echo "export PATH=\"$INSTALL_DIR:\$PATH\"" >> "$RC_FILE"
     echo "${GREEN}Added $INSTALL_DIR to PATH in $RC_FILE${NC}"
     # shellcheck disable=SC1090
-    source "$RC_FILE"
+    . "$RC_FILE"
     # Явно добавляем путь в текущую сессию
     export PATH="$INSTALL_DIR:$PATH"
 else
