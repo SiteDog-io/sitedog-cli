@@ -73,52 +73,19 @@ fi
 # Make file executable
 chmod +x sitedog
 
-# Install binary to ~/.sitedog/bin
-INSTALL_DIR="$HOME/.sitedog/bin"
-mkdir -p "$INSTALL_DIR"
-cp sitedog "$INSTALL_DIR/sitedog"
-echo "Installed sitedog to $INSTALL_DIR/sitedog"
+# Install binary to /usr/local/bin
+echo "Installing sitedog to /usr/local/bin (may require sudo)..."
+sudo cp sitedog /usr/local/bin/sitedog
+sudo chmod +x /usr/local/bin/sitedog
+
+echo "Installed sitedog to /usr/local/bin/sitedog"
 
 # Create templates directory and copy demo.html.tpl
 TEMPLATES_DIR="$HOME/.sitedog"
 mkdir -p "$TEMPLATES_DIR"
 cp demo.html.tpl "$TEMPLATES_DIR/"
 
-# Add ~/.sitedog/bin to PATH if not already there
-SHELL_NAME=$(basename "$SHELL")
-case "$SHELL_NAME" in
-    zsh)
-        RC_FILE="$HOME/.zshrc"
-        ;;
-    bash)
-        RC_FILE="$HOME/.bashrc"
-        ;;
-    fish)
-        RC_FILE="$HOME/.config/fish/config.fish"
-        ;;
-    *)
-        RC_FILE="$HOME/.profile"
-        ;;
-esac
-
-if ! echo "$PATH" | grep -q "$INSTALL_DIR"; then
-    echo "\n# Added by sitedog installer" >> "$RC_FILE"
-    echo "export PATH=\"$INSTALL_DIR:\$PATH\"" >> "$RC_FILE"
-    echo "${GREEN}Added $INSTALL_DIR to PATH in $RC_FILE${NC}"
-    # shellcheck disable=SC1090
-    . "$RC_FILE"
-    # Явно добавляем путь в текущую сессию
-    export PATH="$INSTALL_DIR:$PATH"
-else
-    echo "${YELLOW}$INSTALL_DIR already in PATH${NC}"
-fi
-
-# Проверяем, что бинарник доступен
-if ! command -v sitedog >/dev/null 2>&1; then
-    echo -e "${RED}Error: sitedog binary not found in PATH after installation${NC}"
-    echo "Please try running: source $RC_FILE"
-    exit 1
-fi
+echo "Installed demo.html.tpl to $TEMPLATES_DIR/demo.html.tpl"
 
 # Clean up temporary directory
 cd - > /dev/null

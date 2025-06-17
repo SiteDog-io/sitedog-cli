@@ -17,6 +17,13 @@ if [ -f "$HOME/.local/bin/sitedog" ]; then
     echo "Removed $HOME/.local/bin/sitedog"
 fi
 
+# Remove binary from /usr/local/bin
+if [ -f "/usr/local/bin/sitedog" ]; then
+    echo "Removing /usr/local/bin/sitedog (may require sudo)..."
+    sudo rm -f /usr/local/bin/sitedog
+    echo "Removed /usr/local/bin/sitedog"
+fi
+
 # Remove entire ~/.sitedog directory
 if [ -d "$HOME/.sitedog" ]; then
     rm -rf "$HOME/.sitedog"
@@ -41,6 +48,5 @@ for RC in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.profile" "$HOME/.bash_profile" 
         . "$RC"
     fi
 done
-
 
 echo "${GREEN}SiteDog has been fully uninstalled!${NC}" 
