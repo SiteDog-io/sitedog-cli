@@ -129,6 +129,18 @@ Even for such a small project there are already a lot of information that easily
 
 ---
 
+### What's next?
+
+We believe that Sitedog should be a part of your workflow, not just a tool to show your config. Therefore it must be liteally at hands. Plans to make it happen:
+
+- [ ] VS Code extension
+- [ ] Chrome extension to augment GitLab/Github with sitedog cards
+- [ ] GitLab CI example
+- [ ] GitHub Actions example
+- [ ] Git hooks example
+
+---
+
 ## Cloud access (Beta)
 
 Sitedog Cloud is a platform to manage your sites/apps configs.
