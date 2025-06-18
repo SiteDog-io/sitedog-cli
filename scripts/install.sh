@@ -88,7 +88,7 @@ fi
 if [ $SYMLINK_OK -eq 1 ]; then
     echo "Symlink created: /usr/local/bin/sitedog -> $INSTALL_DIR/sitedog"
 else
-    echo "\033[0;33mNo permissions to create symlink in /usr/local/bin.\033[0m"
+    echo "${YELLOW}No permissions to create symlink in /usr/local/bin.${NC}"
     echo "Please add $INSTALL_DIR to your PATH. For example, add this line to your shell rc file (e.g., ~/.bashrc or ~/.zshrc):"
     echo 'export PATH="$HOME/.sitedog/bin:$PATH"'
 fi
