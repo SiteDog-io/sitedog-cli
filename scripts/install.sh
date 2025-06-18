@@ -73,12 +73,30 @@ fi
 # Make file executable
 chmod +x sitedog
 
-# Install binary to /usr/local/bin
-echo "Installing sitedog to /usr/local/bin (may require sudo)..."
-sudo cp sitedog /usr/local/bin/sitedog
-sudo chmod +x /usr/local/bin/sitedog
+# Install binary to ~/.sitedog/bin
+INSTALL_DIR="$HOME/.sitedog/bin"
+mkdir -p "$INSTALL_DIR"
+cp sitedog "$INSTALL_DIR/sitedog"
+chmod +x "$INSTALL_DIR/sitedog"
+echo "Installed sitedog to $INSTALL_DIR/sitedog"
 
-echo "Installed sitedog to /usr/local/bin/sitedog"
+# Try to create symlink in /usr/local/bin
+SYMLINK_OK=0
+if [ -w /usr/local/bin ]; then
+    ln -sf "$INSTALL_DIR/sitedog" /usr/local/bin/sitedog && SYMLINK_OK=1
+else
+    if sudo ln -sf "$INSTALL_DIR/sitedog" /usr/local/bin/sitedog; then
+        SYMLINK_OK=1
+    fi
+fi
+
+if [ $SYMLINK_OK -eq 1 ]; then
+    echo "Symlink created: /usr/local/bin/sitedog -> $INSTALL_DIR/sitedog"
+else
+    echo "\033[0;33mNo permissions to create symlink in /usr/local/bin.\033[0m"
+    echo "Please add $INSTALL_DIR to your PATH. For example, add this line to your shell rc file (e.g., ~/.bashrc or ~/.zshrc):"
+    echo 'export PATH="$HOME/.sitedog/bin:$PATH"'
+fi
 
 # Create templates directory and copy demo.html.tpl
 TEMPLATES_DIR="$HOME/.sitedog"
