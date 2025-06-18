@@ -8,10 +8,6 @@ RED='\033[0;31m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-# Create temporary directory
-TMP_DIR=$(mktemp -d)
-cd "$TMP_DIR"
-
 # Detect platform
 OS=$(uname -s | tr '[:upper:]' '[:lower:]')
 ARCH=$(uname -m)
@@ -28,8 +24,11 @@ case "$OS" in
     *) echo "Unsupported OS: $OS"; exit 1 ;;
 esac
 
-echo "Detected platform: $OS/$ARCH"
-echo "Downloading $BIN_NAME..."
+# Directories
+INSTALL_DIR="$HOME/.sitedog/bin"
+TEMPLATES_DIR="$HOME/.sitedog"
+mkdir -p "$INSTALL_DIR"
+mkdir -p "$TEMPLATES_DIR"
 
 # Download latest release from GitHub (без jq)
 REPO="SiteDog-io/sitedog-cli"
@@ -44,15 +43,19 @@ if [ -z "$ASSET_URL" ]; then
 fi
 
 echo "Downloading $BIN_NAME from $ASSET_URL..."
-curl -sL "$ASSET_URL" -o sitedog
+curl -sL "$ASSET_URL" -o "$INSTALL_DIR/sitedog"
 
 # Check if file was downloaded
-if [ ! -f sitedog ]; then
+if [ ! -f "$INSTALL_DIR/sitedog" ]; then
     echo -e "${RED}Error: Failed to download sitedog${NC}"
     exit 1
 fi
 
-# Download demo.html.tpl template из того же релиза
+# Make file executable
+chmod +x "$INSTALL_DIR/sitedog"
+echo "Installed sitedog to $INSTALL_DIR/sitedog"
+
+# Download demo.html.tpl template
 TPL_NAME="demo.html.tpl"
 TPL_URL=$(curl -s "$API_URL" | grep 'browser_download_url' | grep "$TPL_NAME" | head -n1 | cut -d '"' -f 4)
 
@@ -62,23 +65,15 @@ if [ -z "$TPL_URL" ]; then
 fi
 
 echo "Downloading $TPL_NAME from $TPL_URL..."
-curl -sL "$TPL_URL" -o demo.html.tpl
+curl -sL "$TPL_URL" -o "$TEMPLATES_DIR/demo.html.tpl"
 
 # Check if template was downloaded
-if [ ! -f demo.html.tpl ]; then
+if [ ! -f "$TEMPLATES_DIR/demo.html.tpl" ]; then
     echo -e "${RED}Error: Failed to download demo.html.tpl${NC}"
     exit 1
 fi
 
-# Make file executable
-chmod +x sitedog
-
-# Install binary to ~/.sitedog/bin
-INSTALL_DIR="$HOME/.sitedog/bin"
-mkdir -p "$INSTALL_DIR"
-cp sitedog "$INSTALL_DIR/sitedog"
-chmod +x "$INSTALL_DIR/sitedog"
-echo "Installed sitedog to $INSTALL_DIR/sitedog"
+echo "Installed demo.html.tpl to $TEMPLATES_DIR/demo.html.tpl"
 
 # Try to create symlink in /usr/local/bin
 SYMLINK_OK=0
@@ -97,17 +92,6 @@ else
     echo "Please add $INSTALL_DIR to your PATH. For example, add this line to your shell rc file (e.g., ~/.bashrc or ~/.zshrc):"
     echo 'export PATH="$HOME/.sitedog/bin:$PATH"'
 fi
-
-# Create templates directory and copy demo.html.tpl
-TEMPLATES_DIR="$HOME/.sitedog"
-mkdir -p "$TEMPLATES_DIR"
-cp demo.html.tpl "$TEMPLATES_DIR/"
-
-echo "Installed demo.html.tpl to $TEMPLATES_DIR/demo.html.tpl"
-
-# Clean up temporary directory
-cd - > /dev/null
-rm -rf "$TMP_DIR"
 
 echo "${GREEN}SiteDog has been installed successfully!${NC}"
 echo "Try: sitedog help" 
