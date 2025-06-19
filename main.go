@@ -87,6 +87,7 @@ Options for live:
 Options for push:
   --config PATH    Path to config file (default: ./sitedog.yml)
   --title TITLE    Configuration title (default: current directory name)
+  SITEDOG_TOKEN    Environment variable for authentication token
 
 Options for render:
   --config PATH    Path to config file (default: ./sitedog.yml)
@@ -96,6 +97,7 @@ Examples:
   sitedog init --config my-config.yml
   sitedog live --port 3030
   sitedog push --title my-project
+  SITEDOG_TOKEN=your_token sitedog push --title my-project
   sitedog render --output index.html`)
 }
 
@@ -270,6 +272,12 @@ func handlePush() {
 }
 
 func getAuthToken() (string, error) {
+	// First check for environment variable
+	if token := os.Getenv("SITEDOG_TOKEN"); token != "" {
+		return strings.TrimSpace(token), nil
+	}
+
+	// Fall back to file-based authentication
 	usr, err := user.Current()
 	if err != nil {
 		return "", fmt.Errorf("error getting current user: %v", err)
