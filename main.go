@@ -87,6 +87,7 @@ Options for live:
 Options for push:
   --config PATH    Path to config file (default: ./sitedog.yml)
   --title TITLE    Configuration title (default: current directory name)
+  --remote URL     Custom API base URL (e.g., localhost:3000, api.example.com)
   SITEDOG_TOKEN    Environment variable for authentication token
 
 Options for render:
@@ -97,6 +98,9 @@ Examples:
   sitedog init --config my-config.yml
   sitedog live --port 3030
   sitedog push --title my-project
+  sitedog push --remote localhost:3000 --title my-project
+  sitedog push --remote api.example.com --title my-project
+  sitedog push --remote https://api.example2.com --title my-project
   SITEDOG_TOKEN=your_token sitedog push --title my-project
   sitedog render --output index.html`)
 }
@@ -230,6 +234,7 @@ func handlePush() {
 	pushFlags := flag.NewFlagSet("push", flag.ExitOnError)
 	configFile := pushFlags.String("config", defaultConfigPath, "Path to config file")
 	configName := pushFlags.String("title", "", "Configuration title")
+	remoteURL := pushFlags.String("remote", "", "Custom API base URL (e.g., localhost:3000, api.example.com)")
 	pushFlags.Parse(os.Args[2:])
 
 	if _, err := os.Stat(*configFile); err != nil {
@@ -261,14 +266,25 @@ func handlePush() {
 		*configName = filepath.Base(dir)
 	}
 
+	// Determine API base URL
+	apiURL := apiBaseURL
+	if *remoteURL != "" {
+		// Add protocol if not specified
+		if !strings.HasPrefix(*remoteURL, "http://") && !strings.HasPrefix(*remoteURL, "https://") {
+			apiURL = "http://" + *remoteURL
+		} else {
+			apiURL = *remoteURL
+		}
+	}
+
 	// Send configuration to server
-	err = pushConfig(token, *configName, string(config))
+	err = pushConfig(token, *configName, string(config), apiURL)
 	if err != nil {
 		fmt.Println("Error pushing config:", err)
 		os.Exit(1)
 	}
 
-	fmt.Printf("Configuration '%s' pushed successfully!\n", *configName)
+	fmt.Printf("Configuration '%s' pushed successfully to %s!\n", *configName, apiURL)
 }
 
 func getAuthToken() (string, error) {
@@ -342,7 +358,7 @@ func getAuthToken() (string, error) {
 	return result.Token, nil
 }
 
-func pushConfig(token, name, content string) error {
+func pushConfig(token, name, content, apiURL string) error {
 	reqBody, err := json.Marshal(map[string]string{
 		"name":    name,
 		"content": content,
@@ -351,7 +367,7 @@ func pushConfig(token, name, content string) error {
 		return fmt.Errorf("error creating request: %v", err)
 	}
 
-	req, err := http.NewRequest("POST", apiBaseURL+"/cli/push", strings.NewReader(string(reqBody)))
+	req, err := http.NewRequest("POST", apiURL+"/cli/push", strings.NewReader(string(reqBody)))
 	if err != nil {
 		return fmt.Errorf("error creating request: %v", err)
 	}
