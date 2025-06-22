@@ -7,6 +7,8 @@ func GetAllDetectors() []Detector {
 		&GitLabCIDetector{},
 		&GitHubActionsDetector{},
 		&GemfileDetector{},
+		&VercelDetector{},
+		&NetlifyDetector{},
 	}
 }
 

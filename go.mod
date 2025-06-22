@@ -1,6 +1,8 @@
 module sitedog-cli
 
-go 1.20
+go 1.21
+
+toolchain go1.24.0
 
 require (
 	github.com/go-shiori/obelisk v0.0.0-20241012070003-61fdf00f94d3
