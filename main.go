@@ -32,7 +32,7 @@ const (
 	globalTemplatePath = ".sitedog/demo.html.tpl"
 	authFilePath       = ".sitedog/auth"
 	apiBaseURL         = "https://app.sitedog.io" // Change to your actual API URL
-	Version            = "v0.2.0"
+	Version            = "v0.2.1"
 	exampleConfig      = `# Describe your project with a free key-value format, think simple.
 #
 # Random sample:
@@ -712,56 +712,121 @@ func checkRepoExists(config map[string]interface{}, repoURL string) bool {
 	return false
 }
 
-// addRepoToConfig adds repo URL to the config file
+// addRepoToConfig adds repo URL to the config file while preserving order
 func addRepoToConfig(configFile, repoURL string) error {
-	// Read existing config
+	// Read existing config as text
 	configData, err := ioutil.ReadFile(configFile)
 	if err != nil {
 		return err
 	}
 
-	// Parse YAML config
+	configText := string(configData)
+	lines := strings.Split(configText, "\n")
+
+	// Parse YAML to understand structure
 	var config map[string]interface{}
 	if err := yaml.Unmarshal(configData, &config); err != nil {
 		return err
 	}
 
-	// Get the first root key (project name) or create one
+	// Find the first root key (project name)
 	var projectKey string
 	if len(config) > 0 {
-		// Use the first existing key
-		for key := range config {
-			projectKey = key
-			break
+		// Find the first key in the original text order
+		for _, line := range lines {
+			trimmedLine := strings.TrimSpace(line)
+			if strings.Contains(trimmedLine, ":") && !strings.HasPrefix(trimmedLine, "#") && !strings.HasPrefix(trimmedLine, " ") && !strings.HasPrefix(trimmedLine, "\t") {
+				projectKey = strings.Split(trimmedLine, ":")[0]
+				break
+			}
 		}
-	} else {
+	}
+
+	if projectKey == "" {
 		// Create a project key based on current directory
 		dir, err := os.Getwd()
 		if err != nil {
 			return err
 		}
 		projectKey = filepath.Base(dir)
-		config[projectKey] = make(map[string]interface{})
+		// Add new project section
+		repoLine := fmt.Sprintf("  repo: %s", repoURL)
+		newConfig := fmt.Sprintf("%s:\n%s\n", projectKey, repoLine)
+		if configText != "" {
+			newConfig = newConfig + "\n" + configText
+		}
+		return ioutil.WriteFile(configFile, []byte(newConfig), 0644)
 	}
 
-	// Add repo to the project section
-	if projectConfig, ok := config[projectKey].(map[string]interface{}); ok {
-		projectConfig["repo"] = repoURL
-	} else if projectConfig, ok := config[projectKey].(map[interface{}]interface{}); ok {
-		projectConfig["repo"] = repoURL
-	} else {
-		// Create new project config
-		config[projectKey] = map[string]interface{}{
-			"repo": repoURL,
+	// Find where to insert the repo line
+	repoLine := fmt.Sprintf("  repo: %s", repoURL)
+	insertIndex := -1
+	inProjectSection := false
+	indentLevel := 0
+
+	for i, line := range lines {
+		trimmedLine := strings.TrimSpace(line)
+
+		// Check if this is the start of our project section
+		if strings.HasPrefix(line, projectKey+":") {
+			inProjectSection = true
+			indentLevel = getIndentLevel(line) + 2 // Next level indent
+			continue
+		}
+
+		// If we're in the project section
+		if inProjectSection {
+			currentIndent := getIndentLevel(line)
+
+			// If we hit a line with same or less indent than project key, we've left the section
+			if trimmedLine != "" && currentIndent <= indentLevel-2 {
+				insertIndex = i
+				break
+			}
+
+			// If this is the last line and we haven't found a place to insert
+			if i == len(lines)-1 {
+				insertIndex = len(lines)
+				break
+			}
 		}
 	}
 
-	// Marshal back to YAML
-	updatedData, err := yaml.Marshal(config)
-	if err != nil {
-		return err
+	// Insert the repo line
+	if insertIndex >= 0 {
+		newLines := make([]string, 0, len(lines)+1)
+		newLines = append(newLines, lines[:insertIndex]...)
+		newLines = append(newLines, repoLine)
+		newLines = append(newLines, lines[insertIndex:]...)
+		return ioutil.WriteFile(configFile, []byte(strings.Join(newLines, "\n")), 0644)
 	}
 
-	// Write back to file
-	return ioutil.WriteFile(configFile, updatedData, 0644)
+	// Fallback: add at the end of the project section
+	for i := len(lines) - 1; i >= 0; i-- {
+		line := lines[i]
+		if strings.TrimSpace(line) != "" {
+			newLines := make([]string, 0, len(lines)+1)
+			newLines = append(newLines, lines[:i+1]...)
+			newLines = append(newLines, repoLine)
+			newLines = append(newLines, lines[i+1:]...)
+			return ioutil.WriteFile(configFile, []byte(strings.Join(newLines, "\n")), 0644)
+		}
+	}
+
+	return fmt.Errorf("could not find appropriate place to insert repo")
+}
+
+// getIndentLevel returns the number of spaces at the beginning of a line
+func getIndentLevel(line string) int {
+	count := 0
+	for _, char := range line {
+		if char == ' ' {
+			count++
+		} else if char == '\t' {
+			count += 2 // Count tab as 2 spaces
+		} else {
+			break
+		}
+	}
+	return count
 }
