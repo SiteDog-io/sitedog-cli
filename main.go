@@ -16,13 +16,13 @@ import (
 	"os/signal"
 	"os/user"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"syscall"
 	"time"
 
 	"github.com/go-shiori/obelisk"
 	"gopkg.in/yaml.v2"
+	"sitedog-cli/detectors"
 )
 
 const (
@@ -100,6 +100,7 @@ Options for render:
 
 Options for scan:
   --config PATH    Path to config file (default: ./sitedog.yml)
+  --detector NAME  Run specific detector only (git, gitlab-ci, github-actions, gemfile)
 
 Examples:
   sitedog init --config my-config.yml
@@ -110,7 +111,11 @@ Examples:
   sitedog push --remote https://api.example2.com --title my-project
   SITEDOG_TOKEN=your_token sitedog push --title my-project
   sitedog render --output index.html
-  sitedog scan --config my-config.yml`)
+  sitedog scan --config my-config.yml
+  sitedog scan --detector git
+  sitedog scan --detector gitlab-ci
+  sitedog scan --detector github-actions
+  sitedog scan --detector gemfile`)
 }
 
 func handleInit() {
@@ -569,33 +574,14 @@ func getFaviconCache(config []byte) []byte {
 	return jsonData
 }
 
-// handleScan scans the current git repository and suggests adding repo URL to config
+
+
+// handleScan runs all available detectors and suggests config additions
 func handleScan() {
 	scanFlags := flag.NewFlagSet("scan", flag.ExitOnError)
 	configFile := scanFlags.String("config", defaultConfigPath, "Path to config file")
+	detectorName := scanFlags.String("detector", "", "Run specific detector only (git, package, docker, etc.)")
 	scanFlags.Parse(os.Args[2:])
-
-	// Check if we're in a git repository
-	if !isGitRepository() {
-		fmt.Println("Error: Not in a git repository. Please run this command from within a git repository.")
-		os.Exit(1)
-	}
-
-	// Get git remote origin URL
-	originURL, err := getGitOriginURL()
-	if err != nil {
-		fmt.Println("Error getting git origin URL:", err)
-		os.Exit(1)
-	}
-
-	if originURL == "" {
-		fmt.Println("No git remote origin found. Please add a remote origin to your repository.")
-		os.Exit(1)
-	}
-
-	// Convert SSH URL to HTTPS if needed
-	repoURL := convertToHTTPSURL(originURL)
-	fmt.Printf("Found git repository: %s\n", repoURL)
 
 	// Check if config file exists
 	if _, err := os.Stat(*configFile); err != nil {
@@ -617,92 +603,100 @@ func handleScan() {
 		os.Exit(1)
 	}
 
-	// Check if repo key already exists
-	if checkRepoExists(config, repoURL) {
-		fmt.Println("Repository URL already exists in config file.")
+	// Initialize all detectors
+	allDetectors := detectors.GetAllDetectors()
+
+	// Filter detectors if specific one requested
+	if *detectorName != "" {
+		detector := detectors.FindDetectorByName(strings.ToLower(*detectorName))
+		if detector == nil {
+			fmt.Printf("Unknown detector: %s\n", *detectorName)
+			fmt.Printf("Available detectors: %s\n", strings.Join(detectors.GetDetectorNames(), ", "))
+			os.Exit(1)
+		}
+		allDetectors = []detectors.Detector{detector}
+	}
+
+	// Run detectors
+	var results []*detectors.DetectionResult
+	for _, detector := range allDetectors {
+		if !detector.ShouldRun() {
+			continue
+		}
+
+		fmt.Printf("Running %s detector...\n", detector.Name())
+		result, err := detector.Detect()
+		if err != nil {
+			fmt.Printf("Warning: %s detector failed: %v\n", detector.Name(), err)
+			continue
+		}
+
+		if result != nil {
+			// Check if this key already exists
+			if !keyExistsInConfig(config, result.Key, result.Value) {
+				results = append(results, result)
+			} else {
+				fmt.Printf("Skipping %s: already exists in config\n", result.Key)
+			}
+		}
+	}
+
+	if len(results) == 0 {
+		fmt.Println("No new suggestions found.")
 		return
 	}
 
-	// Ask user if they want to add the repo
-	fmt.Printf("Do you want to add 'repo: %s' to your config? (y/N): ", repoURL)
-	var response string
-	fmt.Scanln(&response)
+	// Ask for each result individually
+	fmt.Printf("\nFound %d suggestion(s):\n", len(results))
+	addedCount := 0
+	for i, result := range results {
+		fmt.Printf("\n%d. %s\n", i+1, result.Description)
+		fmt.Printf("   %s: %v\n", result.Key, result.Value)
+		if result.Confidence < 1.0 {
+			fmt.Printf("   (Confidence: %.0f%%)\n", result.Confidence*100)
+		}
 
-	if strings.ToLower(strings.TrimSpace(response)) != "y" {
-		fmt.Println("Cancelled.")
-		return
+		fmt.Print("Add this to config? (y/N): ")
+		var response string
+		fmt.Scanln(&response)
+
+		if strings.ToLower(strings.TrimSpace(response)) == "y" {
+			if err := addKeyToConfig(*configFile, result.Key, result.Value); err != nil {
+				fmt.Printf("Error adding %s: %v\n", result.Key, err)
+			} else {
+				fmt.Printf("✓ Added %s: %v\n", result.Key, result.Value)
+				addedCount++
+			}
+		} else {
+			fmt.Println("Skipped.")
+		}
 	}
 
-	// Add repo to config
-	if err := addRepoToConfig(*configFile, repoURL); err != nil {
-		fmt.Println("Error updating config file:", err)
-		os.Exit(1)
-	}
-
-	fmt.Printf("Successfully added 'repo: %s' to %s\n", repoURL, *configFile)
+	fmt.Printf("\nSuccessfully added %d item(s) to %s\n", addedCount, *configFile)
 }
 
-// isGitRepository checks if current directory is a git repository
-func isGitRepository() bool {
-	cmd := exec.Command("git", "rev-parse", "--git-dir")
-	err := cmd.Run()
-	return err == nil
-}
 
-// getGitOriginURL gets the origin URL from git remote
-func getGitOriginURL() (string, error) {
-	cmd := exec.Command("git", "remote", "get-url", "origin")
-	output, err := cmd.Output()
-	if err != nil {
-		return "", err
-	}
-	return strings.TrimSpace(string(output)), nil
-}
 
-// convertToHTTPSURL converts SSH git URLs to HTTPS URLs
-func convertToHTTPSURL(gitURL string) string {
-	// Pattern for SSH URLs like git@github.com:user/repo.git
-	sshPattern := regexp.MustCompile(`^git@([^:]+):(.+)\.git$`)
-	if matches := sshPattern.FindStringSubmatch(gitURL); len(matches) == 3 {
-		return fmt.Sprintf("https://%s/%s", matches[1], matches[2])
-	}
-
-	// Pattern for SSH URLs like git@github.com:user/repo (without .git)
-	sshPatternNoGit := regexp.MustCompile(`^git@([^:]+):(.+)$`)
-	if matches := sshPatternNoGit.FindStringSubmatch(gitURL); len(matches) == 3 {
-		return fmt.Sprintf("https://%s/%s", matches[1], matches[2])
-	}
-
-	// If it's already HTTPS or HTTP, remove .git suffix if present
-	if strings.HasPrefix(gitURL, "http://") || strings.HasPrefix(gitURL, "https://") {
-		return strings.TrimSuffix(gitURL, ".git")
-	}
-
-	// Return as is if we can't parse it
-	return gitURL
-}
-
-// checkRepoExists checks if repo URL already exists in config
-func checkRepoExists(config map[string]interface{}, repoURL string) bool {
-	// Check if there's a direct repo key
-	if repo, exists := config["repo"]; exists {
-		if repoStr, ok := repo.(string); ok && repoStr == repoURL {
+func keyExistsInConfig(config map[string]interface{}, key string, value interface{}) bool {
+	// Check if there's a direct key
+	if existing, exists := config[key]; exists {
+		if fmt.Sprintf("%v", existing) == fmt.Sprintf("%v", value) {
 			return true
 		}
 	}
 
-	// Check nested objects for repo key
-	for _, value := range config {
-		if nestedMap, ok := value.(map[interface{}]interface{}); ok {
-			if repo, exists := nestedMap["repo"]; exists {
-				if repoStr, ok := repo.(string); ok && repoStr == repoURL {
+	// Check nested objects for key
+	for _, configValue := range config {
+		if nestedMap, ok := configValue.(map[interface{}]interface{}); ok {
+			if existing, exists := nestedMap[key]; exists {
+				if fmt.Sprintf("%v", existing) == fmt.Sprintf("%v", value) {
 					return true
 				}
 			}
 		}
-		if nestedMap, ok := value.(map[string]interface{}); ok {
-			if repo, exists := nestedMap["repo"]; exists {
-				if repoStr, ok := repo.(string); ok && repoStr == repoURL {
+		if nestedMap, ok := configValue.(map[string]interface{}); ok {
+			if existing, exists := nestedMap[key]; exists {
+				if fmt.Sprintf("%v", existing) == fmt.Sprintf("%v", value) {
 					return true
 				}
 			}
@@ -712,8 +706,8 @@ func checkRepoExists(config map[string]interface{}, repoURL string) bool {
 	return false
 }
 
-// addRepoToConfig adds repo URL to the config file while preserving order
-func addRepoToConfig(configFile, repoURL string) error {
+// addKeyToConfig adds any key-value pair to the config file while preserving order
+func addKeyToConfig(configFile, key string, value interface{}) error {
 	// Read existing config as text
 	configData, err := ioutil.ReadFile(configFile)
 	if err != nil {
@@ -750,16 +744,16 @@ func addRepoToConfig(configFile, repoURL string) error {
 		}
 		projectKey = filepath.Base(dir)
 		// Add new project section
-		repoLine := fmt.Sprintf("  repo: %s", repoURL)
-		newConfig := fmt.Sprintf("%s:\n%s\n", projectKey, repoLine)
+		keyLine := formatKeyValue(key, value, 2)
+		newConfig := fmt.Sprintf("%s:\n%s\n", projectKey, keyLine)
 		if configText != "" {
 			newConfig = newConfig + "\n" + configText
 		}
 		return ioutil.WriteFile(configFile, []byte(newConfig), 0644)
 	}
 
-	// Find where to insert the repo line
-	repoLine := fmt.Sprintf("  repo: %s", repoURL)
+	// Find where to insert the key line
+	keyLine := formatKeyValue(key, value, 2)
 	insertIndex := -1
 	inProjectSection := false
 	indentLevel := 0
@@ -792,11 +786,11 @@ func addRepoToConfig(configFile, repoURL string) error {
 		}
 	}
 
-	// Insert the repo line
+	// Insert the key line
 	if insertIndex >= 0 {
 		newLines := make([]string, 0, len(lines)+1)
 		newLines = append(newLines, lines[:insertIndex]...)
-		newLines = append(newLines, repoLine)
+		newLines = append(newLines, keyLine)
 		newLines = append(newLines, lines[insertIndex:]...)
 		return ioutil.WriteFile(configFile, []byte(strings.Join(newLines, "\n")), 0644)
 	}
@@ -807,13 +801,13 @@ func addRepoToConfig(configFile, repoURL string) error {
 		if strings.TrimSpace(line) != "" {
 			newLines := make([]string, 0, len(lines)+1)
 			newLines = append(newLines, lines[:i+1]...)
-			newLines = append(newLines, repoLine)
+			newLines = append(newLines, keyLine)
 			newLines = append(newLines, lines[i+1:]...)
 			return ioutil.WriteFile(configFile, []byte(strings.Join(newLines, "\n")), 0644)
 		}
 	}
 
-	return fmt.Errorf("could not find appropriate place to insert repo")
+	return fmt.Errorf("could not find appropriate place to insert key")
 }
 
 // getIndentLevel returns the number of spaces at the beginning of a line
@@ -829,4 +823,41 @@ func getIndentLevel(line string) int {
 		}
 	}
 	return count
+}
+
+// formatKeyValue formats a key-value pair into YAML format with specified indentation
+func formatKeyValue(key string, value interface{}, indent int) string {
+	indentStr := strings.Repeat(" ", indent)
+
+	switch v := value.(type) {
+	case string:
+		return fmt.Sprintf("%s%s: %s", indentStr, key, v)
+	case bool:
+		return fmt.Sprintf("%s%s: %t", indentStr, key, v)
+	case int, int32, int64, float32, float64:
+		return fmt.Sprintf("%s%s: %v", indentStr, key, v)
+	case map[string]string:
+		// For commands and similar map structures
+		lines := []string{fmt.Sprintf("%s%s:", indentStr, key)}
+		for k, val := range v {
+			lines = append(lines, fmt.Sprintf("%s  %s: %s", indentStr, k, val))
+		}
+		return strings.Join(lines, "\n")
+	case map[string]interface{}:
+		lines := []string{fmt.Sprintf("%s%s:", indentStr, key)}
+		for k, val := range v {
+			lines = append(lines, formatKeyValue(k, val, indent+2))
+		}
+		return strings.Join(lines, "\n")
+	case []string:
+		// For arrays
+		lines := []string{fmt.Sprintf("%s%s:", indentStr, key)}
+		for _, item := range v {
+			lines = append(lines, fmt.Sprintf("%s- %s", indentStr, item))
+		}
+		return strings.Join(lines, "\n")
+	default:
+		// Fallback to string representation
+		return fmt.Sprintf("%s%s: %v", indentStr, key, v)
+	}
 }

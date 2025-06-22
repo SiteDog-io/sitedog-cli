@@ -1,0 +1,31 @@
+package detectors
+
+// GetAllDetectors returns all available detectors
+func GetAllDetectors() []Detector {
+	return []Detector{
+		&GitDetector{},
+		&GitLabCIDetector{},
+		&GitHubActionsDetector{},
+		&GemfileDetector{},
+	}
+}
+
+// GetDetectorNames returns list of all detector names
+func GetDetectorNames() []string {
+	detectors := GetAllDetectors()
+	names := make([]string, len(detectors))
+	for i, detector := range detectors {
+		names[i] = detector.Name()
+	}
+	return names
+}
+
+// FindDetectorByName finds detector by name
+func FindDetectorByName(name string) Detector {
+	for _, detector := range GetAllDetectors() {
+		if detector.Name() == name {
+			return detector
+		}
+	}
+	return nil
+}
