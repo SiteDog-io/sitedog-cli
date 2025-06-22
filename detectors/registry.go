@@ -9,6 +9,7 @@ func GetAllDetectors() []Detector {
 		&GemfileDetector{},
 		&VercelDetector{},
 		&NetlifyDetector{},
+		&HerokuDetector{},
 	}
 }
 

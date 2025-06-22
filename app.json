@@ -1,0 +1,15 @@
+{
+  "name": "my-heroku-app",
+  "description": "A test Heroku application",
+  "keywords": ["go", "sitedog"],
+  "buildpacks": [
+    {
+      "url": "heroku/go"
+    }
+  ],
+  "env": {
+    "GO_VERSION": {
+      "value": "1.20"
+    }
+  }
+}

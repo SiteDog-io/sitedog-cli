@@ -31,7 +31,7 @@ func (g *GemfileDetector) Detect() (*DetectionResult, error) {
 
 	content := strings.ToLower(string(data))
 
-	// Map of gem names to service info
+	// Map of gem names to monitoring service info
 	services := map[string]map[string]interface{}{
 		"sentry": {
 			"patterns": []string{"sentry-ruby", "sentry-raven", "\"sentry\""},
@@ -65,7 +65,7 @@ func (g *GemfileDetector) Detect() (*DetectionResult, error) {
 		},
 	}
 
-	// Check each service
+	// Check each monitoring service
 	for _, serviceInfo := range services {
 		patterns := serviceInfo["patterns"].([]string)
 		for _, pattern := range patterns {
