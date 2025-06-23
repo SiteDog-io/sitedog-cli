@@ -54,6 +54,20 @@ show-versions:
 install:
 	scripts/install.sh
 
+dev-install:
+	@echo "Detecting platform and architecture..."
+	@PLATFORM=$$(uname -s | tr '[:upper:]' '[:lower:]'); \
+	ARCH=$$(uname -m); \
+	if [ "$$ARCH" = "x86_64" ]; then \
+		ARCH="amd64"; \
+	elif [ "$$ARCH" = "aarch64" ]; then \
+		ARCH="arm64"; \
+	fi; \
+	BINARY="sitedog-$$PLATFORM-$$ARCH"; \
+	echo "Installing $$BINARY as sitedog-dev..."; \
+	sudo ln -sf $(PWD)/dist/$$BINARY /usr/local/bin/sitedog-dev; \
+	echo "Development version installed successfully!"
+
 uninstall:
 	scripts/uninstall.sh
 
