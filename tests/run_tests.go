@@ -187,6 +187,18 @@ func main() {
 			TestDir:   "i18n",
 			TestFiles: []string{"package.json", "crowdin.yml", ".lokaliserc", ".phraseapp.yml", ".tx/config", "tolgee.json", "locales/en/common.json"},
 		},
+		{
+			Name:      "AI/ML Services",
+			Detector:  &detectors.AIServicesDetector{},
+			TestDir:   "ai_services",
+			TestFiles: []string{"package.json", "requirements.txt", "env_example", "src/ai_client.py", "src/ai_client.js"},
+		},
+		{
+			Name:      "Search Services",
+			Detector:  &detectors.SearchServicesDetector{},
+			TestDir:   "search_services",
+			TestFiles: []string{"package.json", "requirements.txt", "env_example"},
+		},
 	}
 
 	// Get current working directory

@@ -1,0 +1,18 @@
+# AI Service API Keys
+OPENAI_API_KEY=sk-fake-openai-key-1234567890abcdef
+ANTHROPIC_API_KEY=sk-ant-api03-fake-anthropic-key-1234567890abcdef
+HUGGINGFACE_API_TOKEN=hf_fake-huggingface-token-1234567890abcdef
+REPLICATE_API_TOKEN=r8_fake-replicate-token-1234567890abcdef
+COHERE_API_KEY=fake-cohere-api-key-1234567890abcdef
+STABILITY_API_KEY=sk-fake-stability-key-1234567890abcdef
+PINECONE_API_KEY=fake-pinecone-api-key-1234567890abcdef
+PINECONE_ENVIRONMENT=us-west1-gcp-free
+ELEVENLABS_API_KEY=fake-elevenlabs-key-1234567890abcdef
+TOGETHER_API_KEY=fake-together-key-1234567890abcdef
+GROQ_API_KEY=gsk_fake-groq-key-1234567890abcdef
+MISTRAL_API_KEY=fake-mistral-key-1234567890abcdef
+PERPLEXITY_API_KEY=pplx-fake-perplexity-key-1234567890abcdef
+
+# LangChain/LangSmith
+LANGCHAIN_API_KEY=lsv2_fake-langchain-key-1234567890abcdef
+LANGSMITH_API_KEY=lsv2_fake-langsmith-key-1234567890abcdef

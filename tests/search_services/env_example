@@ -1,0 +1,26 @@
+# Search Service API Keys
+ALGOLIA_API_KEY=fake-algolia-api-key-1234567890abcdef
+ALGOLIA_APP_ID=fake-algolia-app-id-12345
+ALGOLIA_ADMIN_KEY=fake-algolia-admin-key-1234567890abcdef
+
+# Elasticsearch
+ELASTICSEARCH_URL=https://fake-elasticsearch-cluster.us-east-1.aws.found.io:9243
+ELASTICSEARCH_USERNAME=elastic
+ELASTICSEARCH_PASSWORD=fake-elastic-password-123
+
+# MeiliSearch
+MEILISEARCH_URL=https://fake-meilisearch-instance.meilisearch.io
+MEILISEARCH_API_KEY=fake-meilisearch-key-1234567890abcdef
+
+# Typesense
+TYPESENSE_URL=https://fake-typesense-cluster.a1.typesense.net
+TYPESENSE_API_KEY=fake-typesense-key-1234567890abcdef
+
+# OpenSearch
+OPENSEARCH_URL=https://fake-opensearch-cluster.us-east-1.es.amazonaws.com
+OPENSEARCH_USERNAME=admin
+OPENSEARCH_PASSWORD=fake-opensearch-password-123
+
+# Apache Solr
+SOLR_URL=http://localhost:8983/solr
+SOLR_CORE=fake-solr-core

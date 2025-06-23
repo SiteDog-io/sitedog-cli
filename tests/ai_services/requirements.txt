@@ -1,0 +1,13 @@
+openai==1.12.0
+anthropic==0.18.1
+langchain==0.1.10
+langchain-openai==0.0.8
+transformers==4.37.2
+huggingface-hub==0.20.3
+replicate==0.22.0
+cohere==4.47
+pinecone-client==3.0.3
+elevenlabs==0.2.26
+together==0.2.7
+groq==0.4.1
+mistralai==0.1.6
