@@ -1,0 +1,45 @@
+version: 2.1
+
+orbs:
+  node: circleci/node@5.0.3
+
+executors:
+  default:
+    docker:
+      - image: cimg/node:18.17
+
+jobs:
+  build:
+    executor: default
+    steps:
+      - checkout
+      - node/install-packages:
+          pkg-manager: npm
+      - run:
+          name: Build application
+          command: npm run build
+      - run:
+          name: Run tests
+          command: npm test
+
+  deploy:
+    executor: default
+    steps:
+      - checkout
+      - node/install-packages:
+          pkg-manager: npm
+      - run:
+          name: Deploy to production
+          command: npm run deploy
+
+workflows:
+  version: 2
+  build-and-deploy:
+    jobs:
+      - build
+      - deploy:
+          requires:
+            - build
+          filters:
+            branches:
+              only: main

@@ -1,0 +1,66 @@
+# Uncomment the next line to define a global platform for your project
+platform :ios, '11.0'
+
+target 'Runner' do
+  # Comment the next line if you don't want to use dynamic frameworks
+  use_frameworks!
+
+  # Pods for Runner
+
+  # Firebase iOS SDK
+  pod 'Firebase/Core'
+  pod 'Firebase/Analytics'
+  pod 'Firebase/Crashlytics'
+  pod 'Firebase/Messaging'  # FCM Push Notifications
+  pod 'Firebase/Auth'
+  pod 'Firebase/Firestore'
+
+  # Error Tracking and Monitoring
+  pod 'Sentry', :git => 'https://github.com/getsentry/sentry-cocoa.git', :tag => '8.9.3'
+  pod 'Bugsnag'
+
+  # Analytics
+  pod 'Amplitude'
+  pod 'Mixpanel'
+
+  # Social Authentication
+  pod 'FBSDKCoreKit'
+  pod 'FBSDKLoginKit'
+  pod 'GoogleSignIn'
+  pod 'TwitterKit'
+
+  # Payments
+  pod 'Stripe'
+  # StoreKit is native iOS framework - no pod needed
+
+  # Maps and Location
+  pod 'GoogleMaps'
+  pod 'GooglePlaces'
+  # MapKit and CoreLocation are native iOS frameworks
+
+  # Push Notifications
+  pod 'OneSignal', '>= 3.0.0', '< 4.0'
+  # UserNotifications is native iOS framework
+
+  # Cloud Storage
+  pod 'AWSCore'
+  pod 'AWSS3'
+
+  # Development and Testing
+  pod 'Fabric'
+
+  target 'RunnerTests' do
+    inherit! :search_paths
+    # Pods for testing
+  end
+
+end
+
+# Xcode Cloud CI/CD scripts
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    target.build_configurations.each do |config|
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '11.0'
+    end
+  end
+end

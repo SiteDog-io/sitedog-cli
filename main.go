@@ -22,6 +22,7 @@ import (
 
 	"github.com/go-shiori/obelisk"
 	"gopkg.in/yaml.v2"
+	"sitedog-cli/detectors"
 )
 
 const (
@@ -31,7 +32,7 @@ const (
 	globalTemplatePath = ".sitedog/demo.html.tpl"
 	authFilePath       = ".sitedog/auth"
 	apiBaseURL         = "https://app.sitedog.io" // Change to your actual API URL
-	Version            = "v0.2.0"
+	Version            = "v0.2.1"
 	exampleConfig      = `# Describe your project with a free key-value format, think simple.
 #
 # Random sample:
@@ -56,6 +57,8 @@ func main() {
 		handlePush()
 	case "render":
 		handleRender()
+	case "scan":
+		handleScan()
 	case "version":
 		fmt.Println("sitedog version", Version)
 	case "help":
@@ -74,6 +77,7 @@ Commands:
   live    Start live server with preview
   push    Push configuration to cloud
   render  Render template to HTML
+  scan    Scan git repository and suggest adding repo URL to config
   version Print version
   help    Show this help message
 
@@ -94,6 +98,10 @@ Options for render:
   --config PATH    Path to config file (default: ./sitedog.yml)
   --output PATH    Path to output HTML file (default: sitedog.html)
 
+Options for scan:
+  --config PATH    Path to config file (default: ./sitedog.yml)
+  --detector NAME  Run specific detector only (git, gitlab-ci, github-actions, gemfile, vercel, netlify, heroku, firebase)
+
 Examples:
   sitedog init --config my-config.yml
   sitedog live --port 3030
@@ -102,7 +110,16 @@ Examples:
   sitedog push --remote api.example.com --title my-project
   sitedog push --remote https://api.example2.com --title my-project
   SITEDOG_TOKEN=your_token sitedog push --title my-project
-  sitedog render --output index.html`)
+  sitedog render --output index.html
+  sitedog scan --config my-config.yml
+  sitedog scan --detector git
+  sitedog scan --detector gitlab-ci
+  sitedog scan --detector github-actions
+  sitedog scan --detector gemfile
+  sitedog scan --detector vercel
+  sitedog scan --detector netlify
+  sitedog scan --detector heroku
+  sitedog scan --detector firebase`)
 }
 
 func handleInit() {
@@ -560,3 +577,635 @@ func getFaviconCache(config []byte) []byte {
 
 	return jsonData
 }
+
+
+
+// handleScan runs all available detectors and suggests config additions
+func handleScan() {
+	scanFlags := flag.NewFlagSet("scan", flag.ExitOnError)
+	configFile := scanFlags.String("config", defaultConfigPath, "Path to config file")
+	detectorName := scanFlags.String("detector", "", "Run specific detector only (git, package, docker, etc.)")
+	scanFlags.Parse(os.Args[2:])
+
+	// Check if config file exists
+	if _, err := os.Stat(*configFile); err != nil {
+		fmt.Printf("Config file %s not found. Run 'sitedog init' first.\n", *configFile)
+		os.Exit(1)
+	}
+
+	// Read existing config
+	configData, err := ioutil.ReadFile(*configFile)
+	if err != nil {
+		fmt.Println("Error reading config file:", err)
+		os.Exit(1)
+	}
+
+	// Parse YAML config
+	var config map[string]interface{}
+	if err := yaml.Unmarshal(configData, &config); err != nil {
+		fmt.Println("Error parsing config file:", err)
+		os.Exit(1)
+	}
+
+	// Initialize all detectors
+	allDetectors := detectors.GetAllDetectors()
+
+	// Filter detectors if specific one requested
+	if *detectorName != "" {
+		detector := detectors.FindDetectorByName(strings.ToLower(*detectorName))
+		if detector == nil {
+			fmt.Printf("Unknown detector: %s\n", *detectorName)
+			fmt.Printf("Available detectors: %s\n", strings.Join(detectors.GetDetectorNames(), ", "))
+			os.Exit(1)
+		}
+		allDetectors = []detectors.Detector{detector}
+	}
+
+	// Run detectors
+	var results []*detectors.DetectionResult
+	var conflicts []*ConflictResult
+	for _, detector := range allDetectors {
+		if !detector.ShouldRun() {
+			continue
+		}
+
+		fmt.Printf("Running %s detector...\n", detector.Name())
+		detectorResults, err := detector.Detect()
+		if err != nil {
+			fmt.Printf("Warning: %s detector failed: %v\n", detector.Name(), err)
+			continue
+		}
+
+		for _, result := range detectorResults {
+			if result != nil {
+				conflict := checkForConflict(config, result.Key, result.Value)
+				if conflict == nil {
+					results = append(results, result)
+				} else {
+					conflicts = append(conflicts, &ConflictResult{
+						Original: result,
+						Conflict: conflict,
+					})
+					fmt.Printf("Conflict detected for %s: %s\n", result.Key, conflict.Reason)
+				}
+			}
+		}
+	}
+
+	// Handle conflicts first
+	totalAdded := 0
+	for _, conflict := range conflicts {
+		added := handleConflict(*configFile, conflict)
+		totalAdded += added
+		if added > 0 {
+			// Reload config after changes
+			configData, _ := ioutil.ReadFile(*configFile)
+			yaml.Unmarshal(configData, &config)
+		}
+	}
+
+	if len(results) == 0 && len(conflicts) == 0 {
+		fmt.Println("No new suggestions found.")
+		return
+	}
+
+	if len(results) == 0 {
+		if totalAdded > 0 {
+			fmt.Printf("\nSuccessfully processed %d conflict(s) in %s\n", totalAdded, *configFile)
+		}
+		return
+	}
+
+	// Separate results by confidence level
+	var autoAddResults []*detectors.DetectionResult
+	var conditionalResults []*detectors.DetectionResult
+	var askUserResults []*detectors.DetectionResult
+
+	for _, result := range results {
+		if result.Confidence >= 0.95 {
+			autoAddResults = append(autoAddResults, result)
+		} else if result.Confidence >= 0.90 {
+			conditionalResults = append(conditionalResults, result)
+		} else {
+			askUserResults = append(askUserResults, result)
+		}
+	}
+
+	addedCount := 0
+
+	// Auto-add high confidence results
+	if len(autoAddResults) > 0 {
+		fmt.Printf("\nAuto-adding %d platform essential service(s):\n", len(autoAddResults))
+		for _, result := range autoAddResults {
+			if err := addKeyToConfig(*configFile, result.Key, result.Value); err != nil {
+				fmt.Printf("Error adding %s: %v\n", result.Key, err)
+			} else {
+				fmt.Printf("✓ Added %s: %v\n", result.Key, result.Value)
+				addedCount++
+			}
+		}
+	}
+
+	// Conditionally auto-add medium confidence results
+	if len(conditionalResults) > 0 {
+		fmt.Printf("\nAuto-adding %d platform common service(s):\n", len(conditionalResults))
+		for _, result := range conditionalResults {
+			if err := addKeyToConfig(*configFile, result.Key, result.Value); err != nil {
+				fmt.Printf("Error adding %s: %v\n", result.Key, err)
+			} else {
+				fmt.Printf("✓ Added %s: %v\n", result.Key, result.Value)
+				addedCount++
+			}
+		}
+	}
+
+	// Ask user for lower confidence results
+	if len(askUserResults) > 0 {
+		fmt.Printf("\nFound %d optional service(s):\n", len(askUserResults))
+		for i, result := range askUserResults {
+			fmt.Printf("\n%d. %s\n", i+1, result.Description)
+			fmt.Printf("   %s: %v\n", result.Key, result.Value)
+			if result.Confidence < 1.0 {
+				fmt.Printf("   (Confidence: %.0f%%)\n", result.Confidence*100)
+			}
+
+			fmt.Print("Add this to config? (y/N): ")
+			var response string
+			fmt.Scanln(&response)
+
+			if strings.ToLower(strings.TrimSpace(response)) == "y" {
+				if err := addKeyToConfig(*configFile, result.Key, result.Value); err != nil {
+					fmt.Printf("Error adding %s: %v\n", result.Key, err)
+				} else {
+					fmt.Printf("✓ Added %s: %v\n", result.Key, result.Value)
+					addedCount++
+				}
+			} else {
+				fmt.Println("Skipped.")
+			}
+		}
+	}
+
+	fmt.Printf("\nSuccessfully added %d item(s) to %s\n", addedCount+totalAdded, *configFile)
+}
+
+// ConflictType represents the type of conflict
+type ConflictType int
+
+const (
+	KeyExists ConflictType = iota
+	ValueExists
+	ExactMatch
+)
+
+// ConflictInfo contains information about a detected conflict
+type ConflictInfo struct {
+	Type         ConflictType
+	ExistingKey  string
+	ExistingValue interface{}
+	Reason       string
+}
+
+// ConflictResult combines the original detection result with conflict info
+type ConflictResult struct {
+	Original *detectors.DetectionResult
+	Conflict *ConflictInfo
+}
+
+// checkForConflict checks if there's a conflict with existing config
+func checkForConflict(config map[string]interface{}, key string, value interface{}) *ConflictInfo {
+	valueStr := fmt.Sprintf("%v", value)
+
+	// Check if there's a direct key
+	if existing, exists := config[key]; exists {
+		existingStr := fmt.Sprintf("%v", existing)
+		if existingStr == valueStr {
+			return &ConflictInfo{
+				Type:         ExactMatch,
+				ExistingKey:  key,
+				ExistingValue: existing,
+				Reason:       "exact same entry already exists",
+			}
+		}
+		return &ConflictInfo{
+			Type:         KeyExists,
+			ExistingKey:  key,
+			ExistingValue: existing,
+			Reason:       fmt.Sprintf("key '%s' already exists with different value", key),
+		}
+	}
+
+	// Check nested objects for key and value
+	for _, configValue := range config {
+		if nestedMap, ok := configValue.(map[interface{}]interface{}); ok {
+			if existing, exists := nestedMap[key]; exists {
+				existingStr := fmt.Sprintf("%v", existing)
+				if existingStr == valueStr {
+					return &ConflictInfo{
+						Type:         ExactMatch,
+						ExistingKey:  key,
+						ExistingValue: existing,
+						Reason:       "exact same entry already exists",
+					}
+				}
+				return &ConflictInfo{
+					Type:         KeyExists,
+					ExistingKey:  key,
+					ExistingValue: existing,
+					Reason:       fmt.Sprintf("key '%s' already exists with different value", key),
+				}
+			}
+
+			// Check if the same value exists under any key in this section
+			for existingKey, nestedValue := range nestedMap {
+				if fmt.Sprintf("%v", nestedValue) == valueStr {
+					return &ConflictInfo{
+						Type:         ValueExists,
+						ExistingKey:  fmt.Sprintf("%v", existingKey),
+						ExistingValue: nestedValue,
+						Reason:       fmt.Sprintf("same value already exists under key '%v'", existingKey),
+					}
+				}
+			}
+		}
+		if nestedMap, ok := configValue.(map[string]interface{}); ok {
+			if existing, exists := nestedMap[key]; exists {
+				existingStr := fmt.Sprintf("%v", existing)
+				if existingStr == valueStr {
+					return &ConflictInfo{
+						Type:         ExactMatch,
+						ExistingKey:  key,
+						ExistingValue: existing,
+						Reason:       "exact same entry already exists",
+					}
+				}
+				return &ConflictInfo{
+					Type:         KeyExists,
+					ExistingKey:  key,
+					ExistingValue: existing,
+					Reason:       fmt.Sprintf("key '%s' already exists with different value", key),
+				}
+			}
+
+			// Check if the same value exists under any key in this section
+			for existingKey, nestedValue := range nestedMap {
+				if fmt.Sprintf("%v", nestedValue) == valueStr {
+					return &ConflictInfo{
+						Type:         ValueExists,
+						ExistingKey:  existingKey,
+						ExistingValue: nestedValue,
+						Reason:       fmt.Sprintf("same value already exists under key '%s'", existingKey),
+					}
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+// handleConflict presents options to user for resolving conflicts
+func handleConflict(configFile string, conflict *ConflictResult) int {
+	result := conflict.Original
+	conflictInfo := conflict.Conflict
+
+	// Skip exact matches
+	if conflictInfo.Type == ExactMatch {
+		fmt.Printf("Skipping %s: %s\n", result.Key, conflictInfo.Reason)
+		return 0
+	}
+
+	// Pre-calculate what the new key would be
+	configData, _ := ioutil.ReadFile(configFile)
+	var config map[string]interface{}
+	yaml.Unmarshal(configData, &config)
+
+	newKey := result.Key + "_2"
+	counter := 2
+	for checkForConflict(config, newKey, result.Value) != nil {
+		counter++
+		newKey = fmt.Sprintf("%s_%d", result.Key, counter)
+	}
+
+	fmt.Printf("\n⚠️  Conflict detected!\n")
+	fmt.Printf("   Trying to add: %s: %v\n", result.Key, result.Value)
+	fmt.Printf("   But %s\n", conflictInfo.Reason)
+	fmt.Printf("   Current value: %s: %v\n", conflictInfo.ExistingKey, conflictInfo.ExistingValue)
+	fmt.Printf("   (%s)\n", result.Description)
+	if result.Confidence < 1.0 {
+		fmt.Printf("   (Confidence: %.0f%%)\n", result.Confidence*100)
+	}
+
+	fmt.Printf("\nOptions:\n")
+	fmt.Printf("1. Overwrite existing value\n")
+	fmt.Printf("2. Add as new key (%s)\n", newKey)
+	fmt.Printf("3. Skip\n")
+	fmt.Print("Choose option (1/2/3): ")
+
+	var choice string
+	fmt.Scanln(&choice)
+
+	switch strings.TrimSpace(choice) {
+	case "1":
+		// Overwrite existing
+		if err := replaceKeyInConfig(configFile, result.Key, result.Value); err != nil {
+			fmt.Printf("Error overwriting %s: %v\n", result.Key, err)
+			return 0
+		}
+		fmt.Printf("✓ Overwritten %s: %v\n", result.Key, result.Value)
+		return 1
+		case "2":
+		// Add as new key (newKey is already calculated)
+		if err := addKeyToConfig(configFile, newKey, result.Value); err != nil {
+			fmt.Printf("Error adding %s: %v\n", newKey, err)
+			return 0
+		}
+		fmt.Printf("✓ Added %s: %v\n", newKey, result.Value)
+		return 1
+	default:
+		fmt.Println("Skipped.")
+		return 0
+	}
+}
+
+func keyExistsInConfig(config map[string]interface{}, key string, value interface{}) bool {
+	valueStr := fmt.Sprintf("%v", value)
+
+	// Check if there's a direct key
+	if existing, exists := config[key]; exists {
+		existingStr := fmt.Sprintf("%v", existing)
+		if existingStr == valueStr {
+			return true // Exact same key-value pair exists
+		}
+		// Key exists but with different value - this would create duplicate keys
+		// We should prevent this to keep YAML valid
+		return true
+	}
+
+	// Check nested objects for key and value
+	for _, configValue := range config {
+		if nestedMap, ok := configValue.(map[interface{}]interface{}); ok {
+			if existing, exists := nestedMap[key]; exists {
+				existingStr := fmt.Sprintf("%v", existing)
+				if existingStr == valueStr {
+					return true // Exact same key-value pair exists
+				}
+				// Key exists but with different value - prevent duplicate keys
+				return true
+			}
+
+			// Also check if the same value exists under any key in this section
+			for _, nestedValue := range nestedMap {
+				if fmt.Sprintf("%v", nestedValue) == valueStr {
+					return true // Same value already exists
+				}
+			}
+		}
+		if nestedMap, ok := configValue.(map[string]interface{}); ok {
+			if existing, exists := nestedMap[key]; exists {
+				existingStr := fmt.Sprintf("%v", existing)
+				if existingStr == valueStr {
+					return true // Exact same key-value pair exists
+				}
+				// Key exists but with different value - prevent duplicate keys
+				return true
+			}
+
+			// Also check if the same value exists under any key in this section
+			for _, nestedValue := range nestedMap {
+				if fmt.Sprintf("%v", nestedValue) == valueStr {
+					return true // Same value already exists
+				}
+			}
+		}
+	}
+
+	return false
+}
+
+// addKeyToConfig adds any key-value pair to the config file while preserving order
+func addKeyToConfig(configFile, key string, value interface{}) error {
+	// Read existing config as text
+	configData, err := ioutil.ReadFile(configFile)
+	if err != nil {
+		return err
+	}
+
+	configText := string(configData)
+	lines := strings.Split(configText, "\n")
+
+	// Parse YAML to understand structure
+	var config map[string]interface{}
+	if err := yaml.Unmarshal(configData, &config); err != nil {
+		return err
+	}
+
+	// Find the first root key (project name)
+	var projectKey string
+	if len(config) > 0 {
+		// Find the first key in the original text order
+		for _, line := range lines {
+			trimmedLine := strings.TrimSpace(line)
+			if strings.Contains(trimmedLine, ":") && !strings.HasPrefix(trimmedLine, "#") && !strings.HasPrefix(trimmedLine, " ") && !strings.HasPrefix(trimmedLine, "\t") {
+				projectKey = strings.Split(trimmedLine, ":")[0]
+				break
+			}
+		}
+	}
+
+	if projectKey == "" {
+		// Create a project key based on current directory
+		dir, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+		projectKey = filepath.Base(dir)
+		// Add new project section
+		keyLine := formatKeyValue(key, value, 2)
+		newConfig := fmt.Sprintf("%s:\n%s\n", projectKey, keyLine)
+		if configText != "" {
+			newConfig = newConfig + "\n" + configText
+		}
+		return ioutil.WriteFile(configFile, []byte(newConfig), 0644)
+	}
+
+	// Find where to insert the key line
+	keyLine := formatKeyValue(key, value, 2)
+	insertIndex := -1
+	inProjectSection := false
+	indentLevel := 0
+
+	for i, line := range lines {
+		trimmedLine := strings.TrimSpace(line)
+
+		// Check if this is the start of our project section
+		if strings.HasPrefix(line, projectKey+":") {
+			inProjectSection = true
+			indentLevel = getIndentLevel(line) + 2 // Next level indent
+			continue
+		}
+
+		// If we're in the project section
+		if inProjectSection {
+			currentIndent := getIndentLevel(line)
+
+			// If we hit a line with same or less indent than project key, we've left the section
+			if trimmedLine != "" && currentIndent <= indentLevel-2 {
+				insertIndex = i
+				break
+			}
+
+			// If this is the last line and we haven't found a place to insert
+			if i == len(lines)-1 {
+				insertIndex = len(lines)
+				break
+			}
+		}
+	}
+
+	// Insert the key line
+	if insertIndex >= 0 {
+		newLines := make([]string, 0, len(lines)+1)
+		newLines = append(newLines, lines[:insertIndex]...)
+		newLines = append(newLines, keyLine)
+		newLines = append(newLines, lines[insertIndex:]...)
+		return ioutil.WriteFile(configFile, []byte(strings.Join(newLines, "\n")), 0644)
+	}
+
+	// Fallback: add at the end of the project section
+	for i := len(lines) - 1; i >= 0; i-- {
+		line := lines[i]
+		if strings.TrimSpace(line) != "" {
+			newLines := make([]string, 0, len(lines)+1)
+			newLines = append(newLines, lines[:i+1]...)
+			newLines = append(newLines, keyLine)
+			newLines = append(newLines, lines[i+1:]...)
+			return ioutil.WriteFile(configFile, []byte(strings.Join(newLines, "\n")), 0644)
+		}
+	}
+
+	return fmt.Errorf("could not find appropriate place to insert key")
+}
+
+// replaceKeyInConfig replaces existing key with new value in config file
+func replaceKeyInConfig(configFile, key string, value interface{}) error {
+	// Read existing config as text
+	configData, err := ioutil.ReadFile(configFile)
+	if err != nil {
+		return err
+	}
+
+	configText := string(configData)
+	lines := strings.Split(configText, "\n")
+
+	// Parse YAML to understand structure
+	var config map[string]interface{}
+	if err := yaml.Unmarshal(configData, &config); err != nil {
+		return err
+	}
+
+	// Find the first root key (project name)
+	var projectKey string
+	if len(config) > 0 {
+		for _, line := range lines {
+			trimmedLine := strings.TrimSpace(line)
+			if strings.Contains(trimmedLine, ":") && !strings.HasPrefix(trimmedLine, "#") && !strings.HasPrefix(trimmedLine, " ") && !strings.HasPrefix(trimmedLine, "\t") {
+				projectKey = strings.Split(trimmedLine, ":")[0]
+				break
+			}
+		}
+	}
+
+	if projectKey == "" {
+		return fmt.Errorf("could not find project section")
+	}
+
+	// Find and replace the key line
+	inProjectSection := false
+	indentLevel := 0
+	keyPattern := fmt.Sprintf("  %s:", key) // 2 spaces + key + colon
+
+	for i, line := range lines {
+		trimmedLine := strings.TrimSpace(line)
+
+		// Check if this is the start of our project section
+		if strings.HasPrefix(line, projectKey+":") {
+			inProjectSection = true
+			indentLevel = getIndentLevel(line) + 2
+			continue
+		}
+
+		// If we're in the project section
+		if inProjectSection {
+			currentIndent := getIndentLevel(line)
+
+			// If we hit a line with same or less indent than project key, we've left the section
+			if trimmedLine != "" && currentIndent <= indentLevel-2 {
+				break
+			}
+
+			// Check if this line contains our key
+			if strings.HasPrefix(line, keyPattern) || (currentIndent == indentLevel && strings.HasPrefix(trimmedLine, key+":")) {
+				// Replace this line with new value
+				newLine := formatKeyValue(key, value, indentLevel)
+				lines[i] = newLine
+				return ioutil.WriteFile(configFile, []byte(strings.Join(lines, "\n")), 0644)
+			}
+		}
+	}
+
+	return fmt.Errorf("could not find key '%s' to replace", key)
+}
+
+// getIndentLevel returns the number of spaces at the beginning of a line
+func getIndentLevel(line string) int {
+	count := 0
+	for _, char := range line {
+		if char == ' ' {
+			count++
+		} else if char == '\t' {
+			count += 2 // Count tab as 2 spaces
+		} else {
+			break
+		}
+	}
+	return count
+}
+
+// formatKeyValue formats a key-value pair into YAML format with specified indentation
+func formatKeyValue(key string, value interface{}, indent int) string {
+	indentStr := strings.Repeat(" ", indent)
+
+	switch v := value.(type) {
+	case string:
+		return fmt.Sprintf("%s%s: %s", indentStr, key, v)
+	case bool:
+		return fmt.Sprintf("%s%s: %t", indentStr, key, v)
+	case int, int32, int64, float32, float64:
+		return fmt.Sprintf("%s%s: %v", indentStr, key, v)
+	case map[string]string:
+		// For commands and similar map structures
+		lines := []string{fmt.Sprintf("%s%s:", indentStr, key)}
+		for k, val := range v {
+			lines = append(lines, fmt.Sprintf("%s  %s: %s", indentStr, k, val))
+		}
+		return strings.Join(lines, "\n")
+	case map[string]interface{}:
+		lines := []string{fmt.Sprintf("%s%s:", indentStr, key)}
+		for k, val := range v {
+			lines = append(lines, formatKeyValue(k, val, indent+2))
+		}
+		return strings.Join(lines, "\n")
+	case []string:
+		// For arrays
+		lines := []string{fmt.Sprintf("%s%s:", indentStr, key)}
+		for _, item := range v {
+			lines = append(lines, fmt.Sprintf("%s- %s", indentStr, item))
+		}
+		return strings.Join(lines, "\n")
+	default:
+		// Fallback to string representation
+		return fmt.Sprintf("%s%s: %v", indentStr, key, v)
+	}
+}
+

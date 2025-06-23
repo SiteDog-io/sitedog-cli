@@ -1,0 +1,116 @@
+pipeline {
+    agent {
+        docker {
+            image 'node:18-alpine'
+            args '-p 3000:3000'
+        }
+    }
+
+    environment {
+        NODE_ENV = 'production'
+        CI = 'true'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Dependencies') {
+            steps {
+                sh 'npm ci --only=production'
+            }
+        }
+
+        stage('Lint') {
+            steps {
+                sh 'npm run lint'
+            }
+            post {
+                always {
+                    publishHTML([
+                        allowMissing: false,
+                        alwaysLinkToLastBuild: true,
+                        keepAll: true,
+                        reportDir: 'reports',
+                        reportFiles: 'lint-results.html',
+                        reportName: 'ESLint Report'
+                    ])
+                }
+            }
+        }
+
+        stage('Test') {
+            steps {
+                sh 'npm test'
+            }
+            post {
+                always {
+                    publishTestResults testResultsPattern: 'reports/test-results.xml'
+                    publishCoverageResults([
+                        allowMissing: false,
+                        alwaysLinkToLastBuild: true,
+                        autoUpdateHealth: false,
+                        autoUpdateStability: false,
+                        coberturaReportFile: 'coverage/cobertura-coverage.xml',
+                        conditionalCoverageTargets: '70, 0, 0',
+                        failUnhealthy: false,
+                        failUnstable: false,
+                        lineCoverageTargets: '80, 0, 0',
+                        maxNumberOfBuilds: 0,
+                        methodCoverageTargets: '80, 0, 0',
+                        onlyStable: false,
+                        sourceEncoding: 'ASCII',
+                        zoomCoverageChart: false
+                    ])
+                }
+            }
+        }
+
+        stage('Build') {
+            steps {
+                sh 'npm run build'
+            }
+            post {
+                success {
+                    archiveArtifacts artifacts: 'dist/**', fingerprint: true
+                }
+            }
+        }
+
+        stage('Deploy') {
+            when {
+                branch 'main'
+            }
+            steps {
+                script {
+                    def deployEnv = env.BRANCH_NAME == 'main' ? 'production' : 'staging'
+                    echo "Deploying to ${deployEnv}"
+                    sh "npm run deploy:${deployEnv}"
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            cleanWs()
+        }
+        success {
+            slackSend(
+                channel: '#deployments',
+                color: 'good',
+                message: "✅ Build ${env.BUILD_NUMBER} succeeded for ${env.JOB_NAME}"
+            )
+        }
+        failure {
+            slackSend(
+                channel: '#deployments',
+                color: 'danger',
+                message: "❌ Build ${env.BUILD_NUMBER} failed for ${env.JOB_NAME}"
+            )
+        }
+    }
+}

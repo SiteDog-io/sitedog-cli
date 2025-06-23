@@ -1,0 +1,83 @@
+{
+  "name": "test-vscode-extension",
+  "displayName": "Test VS Code Extension",
+  "description": "A test VS Code extension with various integrations",
+  "version": "1.0.0",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:extension.helloWorld"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "extension.helloWorld",
+        "title": "Hello World"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "extension.helloWorld",
+        "key": "ctrl+f1",
+        "mac": "cmd+f1",
+        "when": "editorTextFocus"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "when": "editorFocus",
+          "command": "extension.helloWorld",
+          "group": "navigation"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "vsce package",
+    "publish": "vsce publish"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.74.0",
+    "@types/node": "16.x",
+    "typescript": "^4.9.4",
+    "vsce": "^2.15.0",
+    "@vscode/test-electron": "^2.3.0"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^8.1.0",
+    "octokit": "^2.0.14",
+    "openai": "^4.28.4",
+    "firebase": "^10.7.1",
+    "@sentry/node": "^7.99.0",
+    "axios": "^1.6.5"
+  },
+  "publisher": "test-publisher",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/test/vscode-extension.git"
+  },
+  "bugs": {
+    "url": "https://github.com/test/vscode-extension/issues"
+  },
+  "homepage": "https://github.com/test/vscode-extension#readme",
+  "keywords": [
+    "vscode",
+    "extension",
+    "ai",
+    "github",
+    "telemetry"
+  ],
+  "galleryBanner": {
+    "color": "#C80000",
+    "theme": "dark"
+  }
+}

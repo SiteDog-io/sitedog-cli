@@ -1,0 +1,78 @@
+image: node:18
+
+definitions:
+  caches:
+    node: node_modules
+  services:
+    postgres:
+      image: postgres:13
+      environment:
+        POSTGRES_DB: testdb
+        POSTGRES_USER: testuser
+        POSTGRES_PASSWORD: testpass
+  steps:
+    - step: &test
+        name: Test
+        caches:
+          - node
+        services:
+          - postgres
+        script:
+          - npm ci
+          - npm run lint
+          - npm run test:coverage
+        artifacts:
+          - coverage/**
+    - step: &build
+        name: Build
+        caches:
+          - node
+        script:
+          - npm ci
+          - npm run build
+        artifacts:
+          - dist/**
+    - step: &deploy-staging
+        name: Deploy to Staging
+        deployment: staging
+        script:
+          - echo "Deploying to staging..."
+          - npm run deploy:staging
+    - step: &deploy-production
+        name: Deploy to Production
+        deployment: production
+        trigger: manual
+        script:
+          - echo "Deploying to production..."
+          - npm run deploy:production
+
+pipelines:
+  default:
+    - step: *test
+    - step: *build
+
+  branches:
+    main:
+      - step: *test
+      - step: *build
+      - step: *deploy-staging
+      - step: *deploy-production
+
+    develop:
+      - step: *test
+      - step: *build
+      - step: *deploy-staging
+
+  pull-requests:
+    '**':
+      - step: *test
+      - step: *build
+
+  tags:
+    'v*':
+      - step: *test
+      - step: *build
+      - step: *deploy-production
+
+options:
+  max-time: 30

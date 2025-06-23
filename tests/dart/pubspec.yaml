@@ -1,0 +1,114 @@
+name: flutter_test_app
+description: A test Flutter application with external services.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+  flutter: ">=3.10.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # UI and Navigation
+  cupertino_icons: ^1.0.2
+  material_design_icons_flutter: ^7.0.7296
+  go_router: ^12.1.1
+
+  # State Management
+  provider: ^6.1.1
+  riverpod: ^2.4.7
+  bloc: ^8.1.2
+
+  # Monitoring and Error Tracking
+  sentry_flutter: ^7.13.2
+  bugsnag_flutter: ^2.3.0
+  firebase_crashlytics: ^3.4.8
+  datadog_flutter_plugin: ^1.3.2
+
+  # Analytics
+  firebase_analytics: ^10.7.4
+  mixpanel_flutter: ^2.1.1
+  amplitude_flutter: ^3.16.2
+  posthog_flutter: ^4.1.1
+  segment_analytics: ^4.1.0
+
+  # Payments
+  stripe_payment: ^1.0.8
+  flutter_stripe: ^9.5.0
+  razorpay_flutter: ^1.3.7
+  paypal_flutter: ^1.0.1
+  square_in_app_payments: ^3.3.0
+
+  # Cloud Services and Backend
+  firebase_core: ^2.24.2
+  firebase_auth: ^4.15.3
+  cloud_firestore: ^4.13.6
+  firebase_storage: ^11.5.6
+  supabase_flutter: ^2.0.0
+  amplify_flutter: ^1.5.0
+  aws_s3_api: ^2.1.0
+  googleapis: ^11.4.0
+  google_cloud: ^0.5.2
+
+  # Push Notifications
+  onesignal_flutter: ^5.0.4
+  pusher_channels_flutter: ^2.2.1
+  firebase_messaging: ^14.7.10
+
+  # Authentication
+  auth0_flutter: ^1.4.0
+  google_sign_in: ^6.1.6
+  sign_in_with_apple: ^5.0.0
+
+  # Storage and Media
+  cloudinary_flutter: ^1.0.2
+  image_picker: ^1.0.4
+  camera: ^0.10.5+5
+
+  # Networking
+  http: ^1.1.0
+  dio: ^5.3.3
+  graphql_flutter: ^5.1.2
+
+  # Local Storage
+  shared_preferences: ^2.2.2
+  hive: ^2.2.3
+  sqflite: ^2.3.0
+
+  # Utilities
+  intl: ^0.18.1
+  url_launcher: ^6.2.1
+  package_info_plus: ^4.2.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  # Linting and Code Quality
+  flutter_lints: ^3.0.0
+  very_good_analysis: ^5.1.0
+
+  # Testing
+  mockito: ^5.4.2
+  integration_test:
+    sdk: flutter
+
+  # Build Tools
+  build_runner: ^2.4.7
+  json_serializable: ^6.7.1
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/icons/
+
+  fonts:
+    - family: Roboto
+      fonts:
+        - asset: fonts/Roboto-Regular.ttf
+        - asset: fonts/Roboto-Bold.ttf
+          weight: 700

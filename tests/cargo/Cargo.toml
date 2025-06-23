@@ -1,0 +1,25 @@
+[package]
+name = "test-project"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+sentry = "0.32"
+async-stripe = "0.25"
+rusoto = "0.48"
+sendgrid = "2.3"
+mixpanel = "0.4"
+sentry-actix = "0.32"
+ddtrace = "0.8"
+rollbar = "1.0"
+amplitude = "0.3"
+paypal-rs = "0.2"
+mailgun = "0.1"
+posthog = "0.2"
+
+[dev-dependencies]
+bugsnag = "0.1"
+newrelic = "0.2"
+azure_core = "0.19"
+postmark = "0.1"
+google-cloud = "0.1"
