@@ -62,6 +62,12 @@ func main() {
 			TestFiles: []string{".circleci/config.yml"},
 		},
 		{
+			Name:      "Travis CI",
+			Detector:  &detectors.TravisCIDetector{},
+			TestDir:   "travis",
+			TestFiles: []string{".travis.yml"},
+		},
+		{
 			Name:      "Vercel",
 			Detector:  &detectors.VercelDetector{},
 			TestDir:   "hosting",
