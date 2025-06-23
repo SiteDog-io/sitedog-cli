@@ -62,6 +62,18 @@ func main() {
 			TestFiles: []string{"MyApp.csproj", "packages.config", "project.json"},
 		},
 		{
+			Name:      "Java",
+			Detector:  &detectors.JavaDetector{},
+			TestDir:   "java",
+			TestFiles: []string{"pom.xml", "build.gradle", "build.gradle.kts"},
+		},
+		{
+			Name:      "Flutter/Dart",
+			Detector:  &detectors.DartDetector{},
+			TestDir:   "dart",
+			TestFiles: []string{"pubspec.yaml"},
+		},
+		{
 			Name:      "CircleCI",
 			Detector:  &detectors.CircleCIDetector{},
 			TestDir:   "circleci",
