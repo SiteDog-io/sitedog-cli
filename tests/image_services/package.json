@@ -1,0 +1,29 @@
+{
+  "name": "image-services-test-project",
+  "version": "1.0.0",
+  "dependencies": {
+    "cloudinary-core": "^2.13.0",
+    "cloudinary-react": "^1.8.1",
+    "@cloudinary/url-gen": "^1.17.0",
+    "@uploadcare/upload-client": "^6.14.1",
+    "@uploadcare/react-widget": "^2.21.0",
+    "uploadcare-widget": "^3.21.0",
+    "imagekit-javascript": "^2.0.8",
+    "imagekit-react": "^4.1.1",
+    "imagekitio-vue": "^2.0.2",
+    "tinify": "^1.7.1",
+    "kraken-io": "^1.1.1",
+    "optimole-sdk": "^1.0.0",
+    "shortpixel-image-optimiser": "^1.0.0",
+    "imageoptim-cli": "^3.1.8",
+    "imagify-node": "^1.0.0",
+    "unsplash-js": "^7.0.19",
+    "pexels": "^1.4.0",
+    "pixabay-api": "^2.2.0",
+    "shutterstock-api": "^1.1.1",
+    "imgproxy": "^1.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

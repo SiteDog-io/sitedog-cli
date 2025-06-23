@@ -211,6 +211,12 @@ func main() {
 			TestDir:   "push_notifications",
 			TestFiles: []string{"package.json", "requirements.txt", "env_example"},
 		},
+		{
+			Name:      "Image Processing Services",
+			Detector:  &detectors.ImageServicesDetector{},
+			TestDir:   "image_services",
+			TestFiles: []string{"package.json", "requirements.txt", "env_example", "docker-compose.yml"},
+		},
 	}
 
 	// Get current working directory

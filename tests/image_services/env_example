@@ -1,0 +1,57 @@
+# Image Processing & Optimization Service API Keys
+
+# Cloudinary
+CLOUDINARY_CLOUD_NAME=fake-cloud-name-1234567890abcdef
+CLOUDINARY_API_KEY=fake-cloudinary-api-key-1234567890abcdef
+CLOUDINARY_API_SECRET=fake-cloudinary-api-secret-1234567890abcdef
+CLOUDINARY_URL=cloudinary://fake-api-key:fake-api-secret@fake-cloud-name
+
+# Uploadcare
+UPLOADCARE_PUBLIC_KEY=fake-uploadcare-public-key-1234567890abcdef
+UPLOADCARE_SECRET_KEY=fake-uploadcare-secret-key-1234567890abcdef
+
+# ImageKit
+IMAGEKIT_PUBLIC_KEY=fake-imagekit-public-key-1234567890abcdef
+IMAGEKIT_PRIVATE_KEY=fake-imagekit-private-key-1234567890abcdef
+IMAGEKIT_URL_ENDPOINT=https://ik.imagekit.io/fake-id-1234567890abcdef
+
+# TinyPNG
+TINYPNG_API_KEY=fake-tinypng-api-key-1234567890abcdef
+
+# Kraken.io
+KRAKEN_API_KEY=fake-kraken-api-key-1234567890abcdef
+KRAKEN_API_SECRET=fake-kraken-api-secret-1234567890abcdef
+
+# Optimole
+OPTIMOLE_API_KEY=fake-optimole-api-key-1234567890abcdef
+OPTIMOLE_SERVICE_URL=https://fake-optimole-service-url.com
+
+# ShortPixel
+SHORTPIXEL_API_KEY=fake-shortpixel-api-key-1234567890abcdef
+
+# ImageOptim
+IMAGEOPTIM_API_USERNAME=fake-imageoptim-username
+IMAGEOPTIM_API_KEY=fake-imageoptim-api-key-1234567890abcdef
+
+# Imagify
+IMAGIFY_API_KEY=fake-imagify-api-key-1234567890abcdef
+
+# Unsplash
+UNSPLASH_ACCESS_KEY=fake-unsplash-access-key-1234567890abcdef
+UNSPLASH_SECRET_KEY=fake-unsplash-secret-key-1234567890abcdef
+UNSPLASH_APPLICATION_ID=fake-unsplash-app-id-1234567890abcdef
+
+# Pexels
+PEXELS_API_KEY=fake-pexels-api-key-1234567890abcdef
+
+# Pixabay
+PIXABAY_API_KEY=fake-pixabay-api-key-1234567890abcdef
+
+# Shutterstock
+SHUTTERSTOCK_CLIENT_ID=fake-shutterstock-client-id-1234567890abcdef
+SHUTTERSTOCK_CLIENT_SECRET=fake-shutterstock-client-secret-1234567890abcdef
+
+# imgproxy
+IMGPROXY_KEY=fake-imgproxy-key-1234567890abcdef
+IMGPROXY_SALT=fake-imgproxy-salt-1234567890abcdef
+IMGPROXY_BASE_URL=https://imgproxy.example.com
