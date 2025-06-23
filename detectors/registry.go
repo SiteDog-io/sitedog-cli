@@ -8,6 +8,8 @@ func GetAllDetectors() []Detector {
 		&GitHubActionsDetector{},
 		&GemfileDetector{},
 		&RequirementsDetector{},
+		&PackageJSONDetector{},
+		&ComposerDetector{},
 		&VercelDetector{},
 		&NetlifyDetector{},
 		&HerokuDetector{},
