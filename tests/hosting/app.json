@@ -1,0 +1,15 @@
+{
+  "name": "test-app",
+  "description": "A test application",
+  "repository": "https://github.com/example/test-app",
+  "keywords": ["nodejs", "express"],
+  "addons": [
+    "heroku-postgresql:hobby-dev",
+    "heroku-redis:hobby-dev"
+  ],
+  "environments": {
+    "test": {
+      "addons": ["heroku-postgresql:hobby-dev"]
+    }
+  }
+}
