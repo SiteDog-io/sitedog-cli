@@ -167,6 +167,7 @@ func (r *RequirementsDetector) Detect() ([]*DetectionResult, error) {
 					Value:       serviceInfo["url"].(string),
 					Description: fmt.Sprintf("%s service detected in requirements.txt", serviceInfo["name"].(string)),
 					Confidence:  0.9,
+					DebugInfo:   fmt.Sprintf("Found Python package '%s' in requirements.txt", pattern),
 				})
 				break // Only add each service once
 			}

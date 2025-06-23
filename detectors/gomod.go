@@ -203,11 +203,26 @@ func (g *GoModDetector) Detect() ([]*DetectionResult, error) {
 
 		for _, pattern := range patterns {
 			if allDeps[strings.ToLower(pattern)] {
+				// Find the line in go.mod where this dependency appears
+				lineNum := 0
+				sourceText := ""
+				for i, line := range lines {
+					if strings.Contains(strings.ToLower(line), strings.ToLower(pattern)) {
+						lineNum = i + 1
+						sourceText = strings.TrimSpace(line)
+						break
+					}
+				}
+
 				results = append(results, &DetectionResult{
 					Key:         serviceInfo["key"].(string),
 					Value:       serviceInfo["url"].(string),
 					Description: fmt.Sprintf("%s service detected in go.mod", serviceInfo["name"].(string)),
 					Confidence:  0.9,
+					DebugInfo:   fmt.Sprintf("Found Go module '%s' in go.mod", pattern),
+					SourceFile:  "go.mod",
+					SourceLine:  lineNum,
+					SourceText:  sourceText,
 				})
 				break // Only add each service once
 			}

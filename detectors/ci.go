@@ -23,6 +23,15 @@ func (g *GitLabCIDetector) ShouldRun() bool {
 }
 
 func (g *GitLabCIDetector) Detect() ([]*DetectionResult, error) {
+	configFile := ".gitlab-ci.yml"
+
+	// Calculate confidence based on file age
+	baseConfidence := 1.0
+	adjustedConfidence := adjustConfidenceForFileAge(baseConfidence, configFile)
+
+	// Format file age for debug info
+	fileAge := formatFileAge(configFile)
+
 	// Get git origin URL to construct CI link
 	originURL, err := getGitOriginURL()
 	if err == nil && originURL != "" {
@@ -33,17 +42,26 @@ func (g *GitLabCIDetector) Detect() ([]*DetectionResult, error) {
 				Key:         "ci",
 				Value:       ciURL,
 				Description: "GitLab CI pipelines URL",
-				Confidence:  1.0,
+				Confidence:  adjustedConfidence,
+				DebugInfo:   "Found .gitlab-ci.yml file (" + fileAge + ")",
+				SourceFile:  configFile,
+				SourceLine:  1,
+				SourceText:  "GitLab CI configuration file detected",
 			}}, nil
 		}
 	}
 
 	// Fallback: just indicate CI is used
+	fallbackConfidence := adjustConfidenceForFileAge(0.8, configFile)
 	return []*DetectionResult{{
 		Key:         "ci",
 		Value:       "gitlab-ci",
 		Description: "GitLab CI configuration detected",
-		Confidence:  0.8,
+		Confidence:  fallbackConfidence,
+		DebugInfo:   "Found .gitlab-ci.yml file (" + fileAge + ") but no GitLab repo URL",
+		SourceFile:  configFile,
+		SourceLine:  1,
+		SourceText:  "GitLab CI configuration file detected",
 	}}, nil
 }
 
@@ -95,6 +113,7 @@ func (g *GitHubActionsDetector) Detect() ([]*DetectionResult, error) {
 				Value:       ciURL,
 				Description: "GitHub Actions URL",
 				Confidence:  1.0,
+				DebugInfo:   "Found .github/workflows/*.yml files",
 			}}, nil
 		}
 	}
@@ -105,5 +124,6 @@ func (g *GitHubActionsDetector) Detect() ([]*DetectionResult, error) {
 		Value:       "github-actions",
 		Description: "GitHub Actions configuration detected",
 		Confidence:  0.8,
+		DebugInfo:   "Found .github/workflows/*.yml files but no GitHub repo URL",
 	}}, nil
 }

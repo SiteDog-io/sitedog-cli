@@ -1,5 +1,8 @@
 package detectors
 
+// Global flag for deep search mode
+var DeepSearchMode bool
+
 // GetAllDetectors returns all available detectors
 func GetAllDetectors() []Detector {
 	return []Detector{

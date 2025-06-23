@@ -52,11 +52,22 @@ func (b *BitbucketPipelinesDetector) Detect() ([]*DetectionResult, error) {
 			currentDir = filepath.Base(currentDir)
 		}
 
+		// Calculate confidence based on file age
+		baseConfidence := 0.95
+		adjustedConfidence := adjustConfidenceForFileAge(baseConfidence, foundConfig)
+
+		// Format file age for debug info
+		fileAge := formatFileAge(foundConfig)
+
 		results = append(results, &DetectionResult{
 			Key:         "ci",
 			Value:       "https://bitbucket.org/your-workspace/" + currentDir + "/addon/pipelines/home",
 			Description: "Bitbucket Pipelines configuration detected",
-			Confidence:  0.95,
+			Confidence:  adjustedConfidence,
+			DebugInfo:   "Found " + foundConfig + " file, " + fileAge,
+			SourceFile:  foundConfig,
+			SourceLine:  1,
+			SourceText:  "Bitbucket Pipelines configuration file detected",
 		})
 	}
 

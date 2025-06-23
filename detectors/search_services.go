@@ -56,16 +56,13 @@ func (s *SearchServicesDetector) ShouldRun() bool {
 		}
 	}
 
-	return false
+		return false
 }
 
 func (s *SearchServicesDetector) Detect() ([]*DetectionResult, error) {
 	var results []*DetectionResult
 
-	// Read all relevant files to detect search services
-	var projectContent strings.Builder
-
-	// Files to check for search service references
+	// Files to check for search service references - only configuration files
 	files := []string{
 		"package.json",
 		"requirements.txt",
@@ -83,43 +80,56 @@ func (s *SearchServicesDetector) Detect() ([]*DetectionResult, error) {
 		"config.json",
 		"config.yaml",
 		"README.md",
-		"package-lock.json",
-		"yarn.lock",
-		"poetry.lock",
-		"Pipfile",
-		"Pipfile.lock",
 	}
 
-	// Also check source code directories for search imports/usage
-	srcDirs := []string{"src", "lib", "app", "components", "pages", "api", "services", "utils", "search"}
-	for _, dir := range srcDirs {
-		if _, err := os.Stat(dir); err == nil {
-			filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
-				if err == nil && !info.IsDir() {
-					// Check common source file extensions
-					ext := strings.ToLower(filepath.Ext(info.Name()))
-					if ext == ".js" || ext == ".ts" || ext == ".jsx" || ext == ".tsx" ||
-					   ext == ".py" || ext == ".go" || ext == ".php" || ext == ".rb" ||
-					   ext == ".java" || ext == ".cs" || ext == ".rs" || ext == ".swift" ||
-					   ext == ".kt" || ext == ".dart" {
-						if data, readErr := ioutil.ReadFile(path); readErr == nil {
-							projectContent.WriteString(strings.ToLower(string(data)))
-						}
-					}
-				}
-				return nil
-			})
-		}
+	// Store file contents with metadata
+	type FileContent struct {
+		Path    string
+		Content string
+		Lines   []string
 	}
+	var fileContents []FileContent
 
 	// Read individual files
 	for _, file := range files {
 		if data, err := ioutil.ReadFile(file); err == nil {
-			projectContent.WriteString(strings.ToLower(string(data)))
+			content := string(data)
+			fileContents = append(fileContents, FileContent{
+				Path:    file,
+				Content: strings.ToLower(content),
+				Lines:   strings.Split(content, "\n"),
+			})
 		}
 	}
 
-	content := projectContent.String()
+	// Deep search mode - also check source code directories for search imports/usage
+	if DeepSearchMode {
+		srcDirs := []string{"src", "lib", "app", "components", "pages", "api", "services", "utils", "search"}
+		for _, dir := range srcDirs {
+			if _, err := os.Stat(dir); err == nil {
+				filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+					if err == nil && !info.IsDir() {
+						// Check common source file extensions
+						ext := strings.ToLower(filepath.Ext(info.Name()))
+						if ext == ".js" || ext == ".ts" || ext == ".jsx" || ext == ".tsx" ||
+						   ext == ".py" || ext == ".go" || ext == ".php" || ext == ".rb" ||
+						   ext == ".java" || ext == ".cs" || ext == ".rs" || ext == ".swift" ||
+						   ext == ".kt" || ext == ".dart" {
+							if data, readErr := ioutil.ReadFile(path); readErr == nil {
+								content := string(data)
+								fileContents = append(fileContents, FileContent{
+									Path:    path,
+									Content: strings.ToLower(content),
+									Lines:   strings.Split(content, "\n"),
+								})
+							}
+						}
+					}
+					return nil
+				})
+			}
+		}
+	}
 
 	// Define search services with their patterns and dashboards
 	services := map[string]map[string]interface{}{
@@ -139,11 +149,12 @@ func (s *SearchServicesDetector) Detect() ([]*DetectionResult, error) {
 
 		"elasticsearch": {
 			"patterns": []string{
-				"elasticsearch", "elastic", "elasticsearch_url", "elastic_url",
+				"elasticsearch", "elasticsearch_url", "elastic_url",
 				"@elastic/elasticsearch", "elasticsearch-py", "elasticsearch-dsl",
-				"elastic.co", "cloud.elastic.co",
+				"elastic.co", "cloud.elastic.co", "elasticsearch.org",
 				"from elasticsearch import", "import elasticsearch", "Elasticsearch(",
-				"elastic/elasticsearch", "olivere/elastic",
+				"elastic/elasticsearch", "olivere/elastic", "ELASTICSEARCH_URL",
+				"ELASTIC_SEARCH_URL", "ES_HOST", "ES_URL",
 			},
 			"name": "Elasticsearch",
 			"url":  "https://cloud.elastic.co/deployments",
@@ -224,17 +235,36 @@ func (s *SearchServicesDetector) Detect() ([]*DetectionResult, error) {
 		serviceInfo := services[serviceKey]
 		patterns := serviceInfo["patterns"].([]string)
 
+		// Check each pattern in each file
 		for _, pattern := range patterns {
-			if strings.Contains(content, pattern) {
-				results = append(results, &DetectionResult{
-					Key:         serviceInfo["key"].(string),
-					Value:       serviceInfo["url"].(string),
-					Description: serviceInfo["name"].(string) + " detected in project",
-					Confidence:  0.90,
-				})
-				break // Only add each service once
+			for _, fileContent := range fileContents {
+				if strings.Contains(fileContent.Content, pattern) {
+					// Find the line number where the pattern was found
+					lineNum := 0
+					sourceLine := ""
+					for i, line := range fileContent.Lines {
+						if strings.Contains(strings.ToLower(line), pattern) {
+							lineNum = i + 1
+							sourceLine = strings.TrimSpace(line)
+							break
+						}
+					}
+
+					results = append(results, &DetectionResult{
+						Key:         serviceInfo["key"].(string),
+						Value:       serviceInfo["url"].(string),
+						Description: serviceInfo["name"].(string) + " detected in project",
+						Confidence:  0.90,
+						DebugInfo:   "Found pattern '" + pattern + "' in " + fileContent.Path,
+						SourceFile:  fileContent.Path,
+						SourceLine:  lineNum,
+						SourceText:  maskSecrets(sourceLine),
+					})
+					goto nextService // Only add each service once
+				}
 			}
 		}
+		nextService:
 	}
 
 	return results, nil

@@ -74,8 +74,8 @@ func (c *ContainerRegistryDetector) ShouldRun() bool {
 func (c *ContainerRegistryDetector) Detect() ([]*DetectionResult, error) {
 	var results []*DetectionResult
 
-	// Read all relevant files to detect container registries where we PUSH images
-	var projectContent strings.Builder
+	// Get git repository information for building proper URLs
+	gitInfo, _ := parseGitInfo() // Ignore error, we'll use fallback URLs if needed
 
 	// Files to check for registry references - focus on CI/CD and deployment configs
 	files := []string{
@@ -96,12 +96,37 @@ func (c *ContainerRegistryDetector) Detect() ([]*DetectionResult, error) {
 		"build.sh",
 	}
 
+	// Store file contents with metadata
+	type FileContent struct {
+		Path    string
+		Content string
+		Lines   []string
+	}
+	var fileContents []FileContent
+
+	// Read individual files
+	for _, file := range files {
+		if data, err := ioutil.ReadFile(file); err == nil {
+			content := string(data)
+			fileContents = append(fileContents, FileContent{
+				Path:    file,
+				Content: strings.ToLower(content),
+				Lines:   strings.Split(content, "\n"),
+			})
+		}
+	}
+
 	// Also check CI/CD workflow files
 	if _, err := os.Stat(".github/workflows"); err == nil {
 		filepath.Walk(".github/workflows", func(path string, info os.FileInfo, err error) error {
-			if err == nil && strings.HasSuffix(info.Name(), ".yml") || strings.HasSuffix(info.Name(), ".yaml") {
+			if err == nil && (strings.HasSuffix(info.Name(), ".yml") || strings.HasSuffix(info.Name(), ".yaml")) {
 				if data, readErr := ioutil.ReadFile(path); readErr == nil {
-					projectContent.WriteString(strings.ToLower(string(data)))
+					content := string(data)
+					fileContents = append(fileContents, FileContent{
+						Path:    path,
+						Content: strings.ToLower(content),
+						Lines:   strings.Split(content, "\n"),
+					})
 				}
 			}
 			return nil
@@ -115,7 +140,12 @@ func (c *ContainerRegistryDetector) Detect() ([]*DetectionResult, error) {
 			filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 				if err == nil && (strings.HasSuffix(info.Name(), ".yml") || strings.HasSuffix(info.Name(), ".yaml")) {
 					if data, readErr := ioutil.ReadFile(path); readErr == nil {
-						projectContent.WriteString(strings.ToLower(string(data)))
+						content := string(data)
+						fileContents = append(fileContents, FileContent{
+							Path:    path,
+							Content: strings.ToLower(content),
+							Lines:   strings.Split(content, "\n"),
+						})
 					}
 				}
 				return nil
@@ -123,22 +153,14 @@ func (c *ContainerRegistryDetector) Detect() ([]*DetectionResult, error) {
 		}
 	}
 
-	// Read individual files
-	for _, file := range files {
-		if data, err := ioutil.ReadFile(file); err == nil {
-			projectContent.WriteString(strings.ToLower(string(data)))
-		}
-	}
-
-	content := projectContent.String()
-
 	// Define container registry services with patterns focused on PUSH/DEPLOY operations
 	registries := map[string]map[string]interface{}{
 		"docker_hub": {
 			"patterns": []string{
-				"docker push", "docker.io/", "hub.docker.com/",
-				"DOCKER_USERNAME", "DOCKER_PASSWORD", "dockerhub",
-				"registry-1.docker.io", "index.docker.io",
+				"docker push.*docker.io", "docker push.*hub.docker.com",
+				"docker push.*registry-1.docker.io", "docker push.*index.docker.io",
+				"DOCKER_USERNAME", "DOCKER_PASSWORD", "DOCKERHUB_USERNAME",
+				"docker login docker.io", "docker login hub.docker.com",
 			},
 			"name": "Docker Hub",
 			"url":  "https://hub.docker.com",
@@ -147,31 +169,32 @@ func (c *ContainerRegistryDetector) Detect() ([]*DetectionResult, error) {
 
 		"ghcr": {
 			"patterns": []string{
-				"ghcr.io/", "docker.pkg.github.com/",
-				"github.actor", "github.token", "CR_PAT",
-				"push ghcr", "login ghcr.io",
+				"docker push.*ghcr.io", "docker login.*ghcr.io",
+				"github.actor", "github.token", "CR_PAT", "GITHUB_TOKEN.*packages",
+				"push.*ghcr.io", "registry: ghcr.io",
 			},
 			"name": "GitHub Container Registry",
-			"url":  "https://github.com/settings/packages",
+			"url":  buildGitHubContainerRegistryURL(gitInfo),
 			"key":  "container_registry",
 		},
 
-				"gitlab_registry": {
+		"gitlab_registry": {
 			"patterns": []string{
-				"registry.gitlab.com/", "ci_registry", "ci_registry_image",
+				"docker push.*registry.gitlab.com", "ci_registry", "ci_registry_image",
 				"gitlab-ci-token", "ci_registry_password", "ci_registry_user",
-				"docker login.*ci_registry", "push.*ci_registry",
+				"docker login.*ci_registry", "push.*ci_registry", "CI_REGISTRY",
+				"docker push.*$CI_REGISTRY", "registry: $CI_REGISTRY",
 			},
 			"name": "GitLab Container Registry",
-			"url":  "https://gitlab.com/-/packages/container_registry",
+			"url":  buildGitLabContainerRegistryURL(gitInfo),
 			"key":  "container_registry",
 		},
 
 		"gcr": {
 			"patterns": []string{
-				"gcr.io/", "eu.gcr.io/", "us.gcr.io/", "asia.gcr.io/",
-				"gcloud docker", "docker push gcr.io",
-				"GCR_", "GOOGLE_APPLICATION_CREDENTIALS",
+				"docker push.*gcr.io", "docker push.*eu.gcr.io", "docker push.*us.gcr.io", "docker push.*asia.gcr.io",
+				"gcloud docker.*push", "gcloud auth configure-docker.*gcr.io",
+				"GCR_", "GOOGLE_APPLICATION_CREDENTIALS.*gcr",
 			},
 			"name": "Google Container Registry",
 			"url":  "https://console.cloud.google.com/gcr",
@@ -180,9 +203,9 @@ func (c *ContainerRegistryDetector) Detect() ([]*DetectionResult, error) {
 
 		"artifact_registry": {
 			"patterns": []string{
-				"pkg.dev/", "docker push.*pkg.dev",
-				"gcloud auth configure-docker.*pkg.dev",
+				"docker push.*pkg.dev", "gcloud auth configure-docker.*pkg.dev",
 				"artifact-registry", "artifactregistry.googleapis.com",
+				"ARTIFACT_REGISTRY_", "GAR_",
 			},
 			"name": "Google Artifact Registry",
 			"url":  "https://console.cloud.google.com/artifacts",
@@ -191,9 +214,9 @@ func (c *ContainerRegistryDetector) Detect() ([]*DetectionResult, error) {
 
 		"ecr": {
 			"patterns": []string{
-				"amazonaws.com/", ".dkr.ecr.", "ecr get-login",
-				"aws ecr", "ECR_REGISTRY", "AWS_ACCOUNT_ID",
-				"docker push.*ecr", "ecr:GetAuthorizationToken",
+				"docker push.*amazonaws.com", "docker push.*dkr.ecr", "ecr get-login",
+				"aws ecr get-login", "ECR_REGISTRY", "AWS_ACCOUNT_ID.*ecr",
+				"docker login.*ecr", "ecr:GetAuthorizationToken",
 			},
 			"name": "Amazon Elastic Container Registry",
 			"url":  "https://console.aws.amazon.com/ecr",
@@ -202,9 +225,8 @@ func (c *ContainerRegistryDetector) Detect() ([]*DetectionResult, error) {
 
 		"acr": {
 			"patterns": []string{
-				"azurecr.io/", "az acr", "ACR_",
-				"docker push.*azurecr.io", "az acr login",
-				"containerregistry.azure.com", "ACR_REGISTRY",
+				"docker push.*azurecr.io", "az acr login", "ACR_REGISTRY",
+				"containerregistry.azure.com", "ACR_USERNAME", "ACR_PASSWORD",
 			},
 			"name": "Azure Container Registry",
 			"url":  "https://portal.azure.com/#view/HubsExtension/BrowseResource/resourceType/Microsoft.ContainerRegistry%2Fregistries",
@@ -213,9 +235,9 @@ func (c *ContainerRegistryDetector) Detect() ([]*DetectionResult, error) {
 
 		"quay": {
 			"patterns": []string{
-				"quay.io/", "quay.redhat.com/",
-				"docker push quay.io", "QUAY_USERNAME", "QUAY_PASSWORD",
-				"quay login", "push.*quay.io",
+				"docker push.*quay.io", "docker push.*quay.redhat.com",
+				"QUAY_USERNAME", "QUAY_PASSWORD", "QUAY_ROBOT_TOKEN",
+				"docker login quay.io", "registry: quay.io",
 			},
 			"name": "Red Hat Quay",
 			"url":  "https://quay.io/repository",
@@ -224,9 +246,8 @@ func (c *ContainerRegistryDetector) Detect() ([]*DetectionResult, error) {
 
 		"digitalocean_registry": {
 			"patterns": []string{
-				"registry.digitalocean.com/", "docr.io/",
-				"doctl registry", "DIGITALOCEAN_ACCESS_TOKEN",
-				"docker push.*registry.digitalocean.com",
+				"docker push.*registry.digitalocean.com", "docker push.*docr.io",
+				"doctl registry login", "DIGITALOCEAN_ACCESS_TOKEN.*registry",
 			},
 			"name": "DigitalOcean Container Registry",
 			"url":  "https://cloud.digitalocean.com/registry",
@@ -235,9 +256,8 @@ func (c *ContainerRegistryDetector) Detect() ([]*DetectionResult, error) {
 
 		"heroku_registry": {
 			"patterns": []string{
-				"registry.heroku.com/", "heroku container:push",
-				"heroku container:release", "HEROKU_API_KEY",
-				"docker push registry.heroku.com",
+				"docker push.*registry.heroku.com", "heroku container:push",
+				"heroku container:release", "HEROKU_API_KEY.*container",
 			},
 			"name": "Heroku Container Registry",
 			"url":  "https://dashboard.heroku.com",
@@ -246,8 +266,8 @@ func (c *ContainerRegistryDetector) Detect() ([]*DetectionResult, error) {
 
 		"harbor": {
 			"patterns": []string{
-				"harbor/", "goharbor.io/", "harbor-core",
 				"docker push.*harbor", "HARBOR_USERNAME", "HARBOR_PASSWORD",
+				"docker login.*harbor", "registry:.*harbor",
 			},
 			"name": "Harbor Registry",
 			"url":  "https://goharbor.io",
@@ -256,9 +276,8 @@ func (c *ContainerRegistryDetector) Detect() ([]*DetectionResult, error) {
 
 		"jfrog_artifactory": {
 			"patterns": []string{
-				"artifactory/", "jfrog.io/", "jfrog.com/",
-				"docker push.*artifactory", "JFROG_", "RT_",
-				"jfrog rt docker-push",
+				"docker push.*artifactory", "JFROG_USERNAME", "JFROG_PASSWORD",
+				"jfrog rt docker-push", "docker login.*artifactory",
 			},
 			"name": "JFrog Artifactory",
 			"url":  "https://jfrog.com/artifactory",
@@ -277,17 +296,36 @@ func (c *ContainerRegistryDetector) Detect() ([]*DetectionResult, error) {
 		registryInfo := registries[registryKey]
 		patterns := registryInfo["patterns"].([]string)
 
+		// Check each pattern in each file
 		for _, pattern := range patterns {
-			if strings.Contains(content, pattern) {
-				results = append(results, &DetectionResult{
-					Key:         registryInfo["key"].(string),
-					Value:       registryInfo["url"].(string),
-					Description: registryInfo["name"].(string) + " detected in container configuration",
-					Confidence:  0.90,
-				})
-				break // Only add each registry once
+			for _, fileContent := range fileContents {
+				if strings.Contains(fileContent.Content, pattern) {
+					// Find the line number where the pattern was found
+					lineNum := 0
+					sourceLine := ""
+					for i, line := range fileContent.Lines {
+						if strings.Contains(strings.ToLower(line), pattern) {
+							lineNum = i + 1
+							sourceLine = strings.TrimSpace(line)
+							break
+						}
+					}
+
+					results = append(results, &DetectionResult{
+						Key:         registryInfo["key"].(string),
+						Value:       registryInfo["url"].(string),
+						Description: registryInfo["name"].(string) + " detected in container configuration",
+						Confidence:  0.90,
+						DebugInfo:   "Found pattern '" + pattern + "' in " + fileContent.Path,
+						SourceFile:  fileContent.Path,
+						SourceLine:  lineNum,
+						SourceText:  sourceLine,
+					})
+					goto nextRegistry // Only add each registry once
+				}
 			}
 		}
+		nextRegistry:
 	}
 
 	return results, nil

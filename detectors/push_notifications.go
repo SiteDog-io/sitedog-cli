@@ -1,6 +1,7 @@
 package detectors
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -62,9 +63,6 @@ func (p *PushNotificationsDetector) ShouldRun() bool {
 func (p *PushNotificationsDetector) Detect() ([]*DetectionResult, error) {
 	var results []*DetectionResult
 
-	// Read all relevant files to detect push notification services
-	var projectContent strings.Builder
-
 	// Files to check for push notification service references
 	files := []string{
 		"package.json",
@@ -83,13 +81,52 @@ func (p *PushNotificationsDetector) Detect() ([]*DetectionResult, error) {
 		"config.json",
 		"config.yaml",
 		"README.md",
+		"google-services.json",
+		"GoogleService-Info.plist",
+	}
+
+	// Exclude lock files that often have false positives
+	excludeFiles := []string{
 		"package-lock.json",
 		"yarn.lock",
 		"poetry.lock",
-		"Pipfile",
 		"Pipfile.lock",
-		"google-services.json",
-		"GoogleService-Info.plist",
+		"Cargo.lock",
+		"composer.lock",
+	}
+
+	// Store file contents with metadata
+	type FileContent struct {
+		Path    string
+		Content string
+		Lines   []string
+	}
+
+	var fileContents []FileContent
+
+	// Helper function to check if file should be excluded
+	isExcluded := func(filename string) bool {
+		for _, excluded := range excludeFiles {
+			if filename == excluded {
+				return true
+			}
+		}
+		return false
+	}
+
+	// Read individual files
+	for _, file := range files {
+		if !isExcluded(file) {
+			if data, err := ioutil.ReadFile(file); err == nil {
+				content := string(data)
+				lines := strings.Split(content, "\n")
+				fileContents = append(fileContents, FileContent{
+					Path:    file,
+					Content: strings.ToLower(content),
+					Lines:   lines,
+				})
+			}
+		}
 	}
 
 	// Also check source code directories for push notification imports/usage
@@ -104,8 +141,17 @@ func (p *PushNotificationsDetector) Detect() ([]*DetectionResult, error) {
 					   ext == ".py" || ext == ".go" || ext == ".php" || ext == ".rb" ||
 					   ext == ".java" || ext == ".cs" || ext == ".rs" || ext == ".swift" ||
 					   ext == ".kt" || ext == ".dart" {
-						if data, readErr := ioutil.ReadFile(path); readErr == nil {
-							projectContent.WriteString(strings.ToLower(string(data)))
+						// Skip lock files even in subdirectories
+						if !isExcluded(info.Name()) {
+							if data, readErr := ioutil.ReadFile(path); readErr == nil {
+								content := string(data)
+								lines := strings.Split(content, "\n")
+								fileContents = append(fileContents, FileContent{
+									Path:    path,
+									Content: strings.ToLower(content),
+									Lines:   lines,
+								})
+							}
 						}
 					}
 				}
@@ -113,15 +159,6 @@ func (p *PushNotificationsDetector) Detect() ([]*DetectionResult, error) {
 			})
 		}
 	}
-
-	// Read individual files
-	for _, file := range files {
-		if data, err := ioutil.ReadFile(file); err == nil {
-			projectContent.WriteString(strings.ToLower(string(data)))
-		}
-	}
-
-	content := projectContent.String()
 
 	// Define push notification services with their patterns and dashboards
 	services := map[string]map[string]interface{}{
@@ -140,11 +177,12 @@ func (p *PushNotificationsDetector) Detect() ([]*DetectionResult, error) {
 
 		"firebase_messaging": {
 			"patterns": []string{
-				"firebase messaging", "fcm", "firebase-messaging", "firebase/messaging",
+				"firebase messaging", "firebase-messaging", "firebase/messaging",
 				"@firebase/messaging", "firebase-admin", "google-services.json",
-				"firebase.messaging", "getMessaging", "onMessage", "getToken",
+				"firebase.messaging", "getMessaging(", "onMessage(", "getToken(",
 				"from firebase_admin import messaging", "firebase_admin.messaging",
-				"FirebaseMessaging", "FCMNotification",
+				"FirebaseMessaging", "FCMNotification", "FirebaseCloudMessaging",
+				"FIREBASE_SERVER_KEY", "FCM_SERVER_KEY", "firebase_server_key",
 			},
 			"name": "Firebase Cloud Messaging",
 			"url":  "https://console.firebase.google.com/project/_/settings/cloudmessaging",
@@ -153,11 +191,12 @@ func (p *PushNotificationsDetector) Detect() ([]*DetectionResult, error) {
 
 		"pusher": {
 			"patterns": []string{
-				"pusher", "pusher_app_id", "pusher_key", "pusher_secret", "pusher_cluster",
+				"pusher_app_id", "pusher_key", "pusher_secret", "pusher_cluster",
 				"pusher-js", "pusher-http-python", "pusher-http-node",
 				"api.pusherapp.com", "pusher.com",
-				"new Pusher", "Pusher.trigger", "from pusher import Pusher",
+				"new Pusher(", "Pusher.trigger", "from pusher import Pusher",
 				"pusher/pusher-http-go", "github.com/pusher/pusher-http-go",
+				"PUSHER_APP_ID", "PUSHER_KEY", "PUSHER_SECRET", "PUSHER_CLUSTER",
 			},
 			"name": "Pusher Channels",
 			"url":  "https://dashboard.pusher.com/accounts/sign_in",
@@ -244,10 +283,10 @@ func (p *PushNotificationsDetector) Detect() ([]*DetectionResult, error) {
 		"amazon_sns": {
 			"patterns": []string{
 				"amazon sns", "aws sns", "sns_topic_arn", "aws_sns_topic_arn",
-				"@aws-sdk/client-sns", "boto3", "aws-sdk",
-				"sns.amazonaws.com", "console.aws.amazon.com/sns",
-				"sns.publish", "sns_client.publish", "import boto3",
-				"SNSClient", "PublishCommand", "github.com/aws/aws-sdk-go/service/sns",
+				"@aws-sdk/client-sns", "sns.amazonaws.com", "console.aws.amazon.com/sns",
+				"sns.publish(", "sns_client.publish", "SNSClient", "PublishCommand",
+				"github.com/aws/aws-sdk-go/service/sns", "AWS_SNS_TOPIC_ARN",
+				"sns_publish_message", "amazon-sns", "aws-sns",
 			},
 			"name": "Amazon SNS",
 			"url":  "https://console.aws.amazon.com/sns/v3/home",
@@ -256,11 +295,12 @@ func (p *PushNotificationsDetector) Detect() ([]*DetectionResult, error) {
 
 		"apple_push": {
 			"patterns": []string{
-				"apns", "apple push notification", "apns_key_id", "apns_team_id",
+				"apple push notification", "apns_key_id", "apns_team_id",
 				"node-apn", "apns2", "PyAPNs2", "apns-http2",
 				"api.push.apple.com", "developer.apple.com",
 				"apn.send", "apns.send_notification", "from apns2.client import",
-				"APNSClient", "github.com/sideshow/apns2",
+				"APNSClient", "github.com/sideshow/apns2", "APNS_KEY_ID", "APNS_TEAM_ID",
+				"apns_private_key", "apns_certificate", "apple_push_notification",
 			},
 			"name": "Apple Push Notification Service",
 			"url":  "https://developer.apple.com/account/resources/authkeys/list",
@@ -292,14 +332,37 @@ func (p *PushNotificationsDetector) Detect() ([]*DetectionResult, error) {
 		serviceInfo := services[serviceKey]
 		patterns := serviceInfo["patterns"].([]string)
 
+		// Check each pattern against all file contents
 		for _, pattern := range patterns {
-			if strings.Contains(content, pattern) {
-				results = append(results, &DetectionResult{
-					Key:         serviceInfo["key"].(string),
-					Value:       serviceInfo["url"].(string),
-					Description: serviceInfo["name"].(string) + " detected in project",
-					Confidence:  0.90,
-				})
+			found := false
+			for _, fileContent := range fileContents {
+				if strings.Contains(fileContent.Content, pattern) {
+					// Find the exact line where the pattern was found
+					lineNum := 0
+					sourceText := ""
+					for i, line := range fileContent.Lines {
+						if strings.Contains(strings.ToLower(line), pattern) {
+							lineNum = i + 1 // 1-indexed
+							sourceText = strings.TrimSpace(line)
+							break
+						}
+					}
+
+					results = append(results, &DetectionResult{
+						Key:         serviceInfo["key"].(string),
+						Value:       serviceInfo["url"].(string),
+						Description: serviceInfo["name"].(string) + " detected in project",
+						Confidence:  0.90,
+						DebugInfo:   fmt.Sprintf("Found pattern '%s' in %s", pattern, fileContent.Path),
+						SourceFile:  fileContent.Path,
+						SourceLine:  lineNum,
+						SourceText:  sourceText,
+					})
+					found = true
+					break // Only add each service once
+				}
+			}
+			if found {
 				break // Only add each service once
 			}
 		}

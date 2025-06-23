@@ -62,10 +62,7 @@ func (a *AIServicesDetector) ShouldRun() bool {
 func (a *AIServicesDetector) Detect() ([]*DetectionResult, error) {
 	var results []*DetectionResult
 
-	// Read all relevant files to detect AI services
-	var projectContent strings.Builder
-
-	// Files to check for AI service references
+	// Files to check for AI service references - only configuration files
 	files := []string{
 		"package.json",
 		"requirements.txt",
@@ -83,43 +80,56 @@ func (a *AIServicesDetector) Detect() ([]*DetectionResult, error) {
 		"config.json",
 		"config.yaml",
 		"README.md",
-		"package-lock.json",
-		"yarn.lock",
-		"poetry.lock",
-		"Pipfile",
-		"Pipfile.lock",
 	}
 
-	// Also check source code directories for AI imports/usage
-	srcDirs := []string{"src", "lib", "app", "components", "pages", "api", "services", "utils", "models"}
-	for _, dir := range srcDirs {
-		if _, err := os.Stat(dir); err == nil {
-			filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
-				if err == nil && !info.IsDir() {
-					// Check common source file extensions
-					ext := strings.ToLower(filepath.Ext(info.Name()))
-					if ext == ".js" || ext == ".ts" || ext == ".jsx" || ext == ".tsx" ||
-					   ext == ".py" || ext == ".go" || ext == ".php" || ext == ".rb" ||
-					   ext == ".java" || ext == ".cs" || ext == ".rs" || ext == ".swift" ||
-					   ext == ".kt" || ext == ".dart" {
-						if data, readErr := ioutil.ReadFile(path); readErr == nil {
-							projectContent.WriteString(strings.ToLower(string(data)))
-						}
-					}
-				}
-				return nil
-			})
-		}
+	// Store file contents with metadata
+	type FileContent struct {
+		Path    string
+		Content string
+		Lines   []string
 	}
+	var fileContents []FileContent
 
 	// Read individual files
 	for _, file := range files {
 		if data, err := ioutil.ReadFile(file); err == nil {
-			projectContent.WriteString(strings.ToLower(string(data)))
+			content := string(data)
+			fileContents = append(fileContents, FileContent{
+				Path:    file,
+				Content: strings.ToLower(content),
+				Lines:   strings.Split(content, "\n"),
+			})
 		}
 	}
 
-	content := projectContent.String()
+	// Deep search mode - also check source code directories for AI imports/usage
+	if DeepSearchMode {
+		srcDirs := []string{"src", "lib", "app", "components", "pages", "api", "services", "utils", "models"}
+		for _, dir := range srcDirs {
+			if _, err := os.Stat(dir); err == nil {
+				filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+					if err == nil && !info.IsDir() {
+						// Check common source file extensions
+						ext := strings.ToLower(filepath.Ext(info.Name()))
+						if ext == ".js" || ext == ".ts" || ext == ".jsx" || ext == ".tsx" ||
+						   ext == ".py" || ext == ".go" || ext == ".php" || ext == ".rb" ||
+						   ext == ".java" || ext == ".cs" || ext == ".rs" || ext == ".swift" ||
+						   ext == ".kt" || ext == ".dart" {
+							if data, readErr := ioutil.ReadFile(path); readErr == nil {
+								content := string(data)
+								fileContents = append(fileContents, FileContent{
+									Path:    path,
+									Content: strings.ToLower(content),
+									Lines:   strings.Split(content, "\n"),
+								})
+							}
+						}
+					}
+					return nil
+				})
+			}
+		}
+	}
 
 	// Define AI services with their patterns and dashboards
 	services := map[string]map[string]interface{}{
@@ -228,9 +238,10 @@ func (a *AIServicesDetector) Detect() ([]*DetectionResult, error) {
 
 		"together": {
 			"patterns": []string{
-				"together", "together_api_key", "together.ai",
-				"api.together.xyz", "together-python",
-				"from together import", "import together",
+				"together_api_key", "together.ai", "together_ai",
+				"api.together.xyz", "together-python", "together-ai",
+				"from together import", "import together", "@together-ai/",
+				"TOGETHER_API_KEY", "TOGETHER_AI_API_KEY",
 			},
 			"name": "Together AI",
 			"url":  "https://api.together.xyz/settings/billing",
@@ -268,8 +279,6 @@ func (a *AIServicesDetector) Detect() ([]*DetectionResult, error) {
 			"url":  "https://console.groq.com/settings/billing",
 			"key":  "ai_service",
 		},
-
-
 	}
 
 	// Check for specific AI services in order of popularity
@@ -283,18 +292,37 @@ func (a *AIServicesDetector) Detect() ([]*DetectionResult, error) {
 		serviceInfo := services[serviceKey]
 		patterns := serviceInfo["patterns"].([]string)
 
+		// Check each pattern in each file
 		for _, pattern := range patterns {
-			if strings.Contains(content, pattern) {
-				results = append(results, &DetectionResult{
-					Key:         serviceInfo["key"].(string),
-					Value:       serviceInfo["url"].(string),
-					Description: serviceInfo["name"].(string) + " detected in project",
-					Confidence:  0.90,
-				})
-				break // Only add each service once
+			for _, fileContent := range fileContents {
+				if strings.Contains(fileContent.Content, pattern) {
+					// Find the line number where the pattern was found
+					lineNum := 0
+					sourceLine := ""
+					for i, line := range fileContent.Lines {
+						if strings.Contains(strings.ToLower(line), pattern) {
+							lineNum = i + 1
+							sourceLine = strings.TrimSpace(line)
+							break
+						}
+					}
+
+					results = append(results, &DetectionResult{
+						Key:         serviceInfo["key"].(string),
+						Value:       serviceInfo["url"].(string),
+						Description: serviceInfo["name"].(string) + " detected in project",
+						Confidence:  0.90,
+						DebugInfo:   "Found pattern '" + pattern + "' in " + fileContent.Path,
+						SourceFile:  fileContent.Path,
+						SourceLine:  lineNum,
+						SourceText:  maskSecrets(sourceLine),
+					})
+					goto nextService // Only add each service once
+				}
 			}
 		}
+		nextService:
 	}
 
-	return results, nil
+		return results, nil
 }

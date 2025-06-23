@@ -24,12 +24,19 @@ func (g *GemfileDetector) ShouldRun() bool {
 }
 
 func (g *GemfileDetector) Detect() ([]*DetectionResult, error) {
-	data, err := ioutil.ReadFile("Gemfile")
+	gemfilePath := "Gemfile"
+	data, err := ioutil.ReadFile(gemfilePath)
 	if err != nil {
 		return nil, err
 	}
 
-	content := strings.ToLower(string(data))
+	content := string(data)
+	lines := strings.Split(content, "\n")
+	contentLower := strings.ToLower(content)
+
+	// Calculate base confidence and format file age for debug
+	baseConfidence := 0.9
+	fileAge := formatFileAge(gemfilePath)
 
 	// Map of gem names to service info
 	services := map[string]map[string]interface{}{
@@ -173,12 +180,30 @@ func (g *GemfileDetector) Detect() ([]*DetectionResult, error) {
 		patterns := serviceInfo["patterns"].([]string)
 
 		for _, pattern := range patterns {
-			if strings.Contains(content, pattern) {
+			if strings.Contains(contentLower, pattern) {
+				// Find the line number where the pattern was found
+				lineNum := 0
+				sourceLine := ""
+				for i, line := range lines {
+					if strings.Contains(strings.ToLower(line), pattern) {
+						lineNum = i + 1
+						sourceLine = strings.TrimSpace(line)
+						break
+					}
+				}
+
+				// Adjust confidence based on file age
+				adjustedConfidence := adjustConfidenceForFileAge(baseConfidence, gemfilePath)
+
 				results = append(results, &DetectionResult{
 					Key:         serviceInfo["key"].(string),
 					Value:       serviceInfo["url"].(string),
 					Description: fmt.Sprintf("%s service detected in Gemfile", serviceInfo["name"].(string)),
-					Confidence:  0.9,
+					Confidence:  adjustedConfidence,
+					DebugInfo:   fmt.Sprintf("Found gem pattern '%s' in Gemfile (%s)", pattern, fileAge),
+					SourceFile:  gemfilePath,
+					SourceLine:  lineNum,
+					SourceText:  maskSecrets(sourceLine),
 				})
 				break // Only add each service once
 			}
