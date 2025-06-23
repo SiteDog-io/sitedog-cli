@@ -1,0 +1,20 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+name = "test-shopify-app"
+client_id = "fake_client_id_for_testing"
+application_url = "https://test-app.example.com"
+embedded = true
+
+[access_scopes]
+scopes = "write_products,read_customers"
+
+[auth]
+redirect_urls = [
+  "https://test-app.example.com/auth/callback"
+]
+
+[webhooks]
+api_version = "2023-10"
+
+[pos]
+embedded = false

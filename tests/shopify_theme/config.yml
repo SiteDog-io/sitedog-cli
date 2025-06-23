@@ -1,0 +1,14 @@
+development:
+  password: fake_theme_token_12345678901234567890123456789012
+  theme_id: "123456789"
+  store: test-store.myshopify.com
+  ignore_files:
+    - config/settings_data.json
+
+production:
+  password: fake_theme_token_98765432109876543210987654321098
+  theme_id: "987654321"
+  store: production-store.myshopify.com
+  ignore_files:
+    - config/settings_data.json
+    - "*.log"

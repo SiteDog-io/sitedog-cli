@@ -1,0 +1,19 @@
+{
+  "name": "test-shopify-app",
+  "version": "1.0.0",
+  "description": "Test Shopify app",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "shopify app dev"
+  },
+  "dependencies": {
+    "@shopify/polaris": "^12.0.0",
+    "@shopify/hydrogen": "^2023.10.0",
+    "express": "^4.18.0"
+  },
+  "devDependencies": {
+    "@shopify/cli": "^3.50.0",
+    "ngrok": "^5.0.0"
+  }
+}
