@@ -56,6 +56,12 @@ func main() {
 			TestFiles: []string{"Cargo.toml"},
 		},
 		{
+			Name:      ".NET/C#",
+			Detector:  &detectors.DotNetDetector{},
+			TestDir:   "dotnet",
+			TestFiles: []string{"MyApp.csproj", "packages.config", "project.json"},
+		},
+		{
 			Name:      "CircleCI",
 			Detector:  &detectors.CircleCIDetector{},
 			TestDir:   "circleci",
@@ -78,6 +84,12 @@ func main() {
 			Detector:  &detectors.JenkinsDetector{},
 			TestDir:   "jenkins",
 			TestFiles: []string{"Jenkinsfile"},
+		},
+		{
+			Name:      "Bitbucket Pipelines",
+			Detector:  &detectors.BitbucketPipelinesDetector{},
+			TestDir:   "bitbucket",
+			TestFiles: []string{"bitbucket-pipelines.yml"},
 		},
 		{
 			Name:      "Vercel",
