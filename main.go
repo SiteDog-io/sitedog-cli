@@ -245,8 +245,19 @@ func handlePush() {
 		os.Exit(1)
 	}
 
-	// Get authorization token
-	token, err := getAuthToken()
+	// Determine API base URL first
+	apiURL := apiBaseURL
+	if *remoteURL != "" {
+		// Add protocol if not specified
+		if !strings.HasPrefix(*remoteURL, "http://") && !strings.HasPrefix(*remoteURL, "https://") {
+			apiURL = "http://" + *remoteURL
+		} else {
+			apiURL = *remoteURL
+		}
+	}
+
+	// Get authorization token with correct API URL
+	token, err := getAuthToken(apiURL)
 	if err != nil {
 		fmt.Println("Error:", err)
 		os.Exit(1)
@@ -269,17 +280,6 @@ func handlePush() {
 		*configName = filepath.Base(dir)
 	}
 
-	// Determine API base URL
-	apiURL := apiBaseURL
-	if *remoteURL != "" {
-		// Add protocol if not specified
-		if !strings.HasPrefix(*remoteURL, "http://") && !strings.HasPrefix(*remoteURL, "https://") {
-			apiURL = "http://" + *remoteURL
-		} else {
-			apiURL = *remoteURL
-		}
-	}
-
 	// Send configuration to server
 	err = pushConfig(token, *configName, string(config), apiURL, *tags)
 	if err != nil {
@@ -290,7 +290,7 @@ func handlePush() {
 	fmt.Printf("Configuration '%s' pushed successfully to %s!\n", *configName, apiURL)
 }
 
-func getAuthToken() (string, error) {
+func getAuthToken(apiURL string) (string, error) {
 	// First check for environment variable
 	if token := os.Getenv("SITEDOG_TOKEN"); token != "" {
 		return strings.TrimSpace(token), nil
@@ -330,7 +330,7 @@ func getAuthToken() (string, error) {
 		return "", fmt.Errorf("error creating request: %v", err)
 	}
 
-	resp, err := http.Post(apiBaseURL+"/cli/auth", "application/json", strings.NewReader(string(reqBody)))
+	resp, err := http.Post(apiURL+"/cli/auth", "application/json", strings.NewReader(string(reqBody)))
 	if err != nil {
 		return "", fmt.Errorf("error sending request: %v", err)
 	}
