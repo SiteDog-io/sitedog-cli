@@ -32,6 +32,7 @@ func GetAllDetectors() []Detector {
 		&AIServicesDetector{},
 		&SearchServicesDetector{},
 		&MapsServicesDetector{},
+		&PushNotificationsDetector{},
 		&VercelDetector{},
 		&NetlifyDetector{},
 		&HerokuDetector{},

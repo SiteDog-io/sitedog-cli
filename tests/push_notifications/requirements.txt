@@ -1,0 +1,10 @@
+onesignal-sdk==2.0.0
+firebase-admin==6.5.0
+pusher==3.3.2
+exponent-server-sdk==2.0.0
+sendbird-platform-sdk==1.0.0
+urbanairship==9.0.0
+twilio==8.12.0
+boto3==1.34.24
+PyAPNs2==0.7.2
+pywebpush==1.14.0

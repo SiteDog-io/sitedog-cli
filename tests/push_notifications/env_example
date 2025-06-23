@@ -1,0 +1,52 @@
+# Push Notification Service API Keys
+
+# OneSignal
+ONESIGNAL_APP_ID=fake-onesignal-app-id-1234567890abcdef
+ONESIGNAL_API_KEY=fake-onesignal-api-key-1234567890abcdef
+
+# Firebase Cloud Messaging
+FCM_SERVER_KEY=fake-fcm-server-key-1234567890abcdef
+FIREBASE_PROJECT_ID=fake-firebase-project-id
+
+# Pusher
+PUSHER_APP_ID=fake-pusher-app-id-12345
+PUSHER_KEY=fake-pusher-key-1234567890abcdef
+PUSHER_SECRET=fake-pusher-secret-1234567890abcdef
+PUSHER_CLUSTER=us2
+
+# Expo Push Notifications
+EXPO_ACCESS_TOKEN=fake-expo-access-token-1234567890abcdef
+
+# SendBird
+SENDBIRD_APP_ID=fake-sendbird-app-id-1234567890abcdef
+SENDBIRD_API_TOKEN=fake-sendbird-api-token-1234567890abcdef
+
+# Pushy
+PUSHY_API_KEY=fake-pushy-api-key-1234567890abcdef
+PUSHY_SECRET_API_KEY=fake-pushy-secret-key-1234567890abcdef
+
+# Urban Airship (Airship)
+AIRSHIP_APP_KEY=fake-airship-app-key-1234567890abcdef
+AIRSHIP_MASTER_SECRET=fake-airship-master-secret-1234567890abcdef
+
+# Pushwoosh
+PUSHWOOSH_APP_ID=fake-pushwoosh-app-id-1234567890abcdef
+PUSHWOOSH_API_TOKEN=fake-pushwoosh-api-token-1234567890abcdef
+
+# Twilio Notify
+TWILIO_ACCOUNT_SID=fake-twilio-account-sid-1234567890abcdef
+TWILIO_AUTH_TOKEN=fake-twilio-auth-token-1234567890abcdef
+TWILIO_NOTIFY_SERVICE_SID=fake-twilio-notify-service-sid-1234567890abcdef
+
+# Amazon SNS
+AWS_ACCESS_KEY_ID=fake-aws-access-key-id-1234567890abcdef
+AWS_SECRET_ACCESS_KEY=fake-aws-secret-access-key-1234567890abcdef
+SNS_TOPIC_ARN=arn:aws:sns:us-east-1:123456789012:fake-topic
+
+# Apple Push Notification Service
+APNS_KEY_ID=fake-apns-key-id-1234567890abcdef
+APNS_TEAM_ID=fake-apns-team-id-1234567890abcdef
+
+# Web Push
+VAPID_PUBLIC_KEY=fake-vapid-public-key-1234567890abcdef
+VAPID_PRIVATE_KEY=fake-vapid-private-key-1234567890abcdef
