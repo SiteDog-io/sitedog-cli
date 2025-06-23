@@ -1,0 +1,7 @@
+algoliasearch==3.0.0
+elasticsearch==8.11.0
+elasticsearch-dsl==8.11.0
+meilisearch==0.21.0
+typesense==0.16.0
+opensearch-py==2.4.2
+pysolr==3.9.0

@@ -1,0 +1,26 @@
+{
+  "projectId": 123456789,
+  "apiUrl": "https://app.tolgee.io",
+  "apiKey": "fake-tolgee-api-key-for-testing",
+  "patterns": [
+    {
+      "pattern": "./locales/{languageTag}.json",
+      "keyPattern": "{key}"
+    },
+    {
+      "pattern": "./src/components/{namespace}/{languageTag}.json",
+      "keyPattern": "{namespace}.{key}"
+    }
+  ],
+  "defaultLanguage": "en",
+  "push": {
+    "files": [
+      "./locales/en.json",
+      "./src/components/*/en.json"
+    ]
+  },
+  "pull": {
+    "path": "./locales",
+    "format": "json"
+  }
+}

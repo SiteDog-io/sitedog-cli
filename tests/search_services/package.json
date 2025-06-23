@@ -1,0 +1,16 @@
+{
+  "name": "search-test-project",
+  "version": "1.0.0",
+  "dependencies": {
+    "@algolia/client-search": "^4.20.0",
+    "algoliasearch": "^4.20.0",
+    "react-instantsearch": "^7.3.0",
+    "@elastic/elasticsearch": "^8.11.0",
+    "meilisearch": "^0.37.0",
+    "typesense": "^1.7.2",
+    "opensearch-js": "^2.4.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

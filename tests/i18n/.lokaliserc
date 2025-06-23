@@ -1,0 +1,17 @@
+[lokalise]
+token = fake-lokalise-token-for-testing
+project_id = 987654321.abcdef
+
+[download]
+format = json
+original_filenames = true
+directory_prefix = ./locales/%LANG_ISO%/
+include_comments = true
+include_description = true
+
+[upload]
+file = ./locales/en/**/*.json
+lang_iso = en
+replace_modified = true
+cleanup_mode = false
+detect_icu_plurals = true

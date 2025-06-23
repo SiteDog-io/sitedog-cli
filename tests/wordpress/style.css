@@ -1,0 +1,90 @@
+/*
+Theme Name: Modern Business Theme
+Description: A modern WordPress theme for business websites with Elementor support
+Author: Your Name
+Version: 1.0.0
+License: GPL v2 or later
+Text Domain: modern-business
+Tags: business, modern, elementor, woocommerce
+
+This theme supports:
+- Elementor Page Builder
+- WooCommerce integration
+- Yoast SEO optimization
+- WPML translations
+- Jetpack features
+- WP Rocket caching
+- Wordfence security
+*/
+
+/* Reset and base styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    line-height: 1.6;
+    color: #333;
+}
+
+/* Header styles */
+.header {
+    background: #fff;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    position: fixed;
+    width: 100%;
+    top: 0;
+    z-index: 1000;
+}
+
+/* Navigation */
+.nav-menu {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+}
+
+/* Content area */
+.content {
+    margin-top: 80px;
+    padding: 2rem;
+}
+
+/* Footer */
+.footer {
+    background: #333;
+    color: #fff;
+    text-align: center;
+    padding: 2rem;
+    margin-top: 2rem;
+}
+
+/* Elementor compatibility */
+.elementor-widget {
+    margin-bottom: 1rem;
+}
+
+/* WooCommerce styles */
+.woocommerce .button {
+    background: #0073aa;
+    color: #fff;
+    padding: 0.5rem 1rem;
+    text-decoration: none;
+    border-radius: 3px;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .nav-menu {
+        flex-direction: column;
+        padding: 1rem;
+    }
+
+    .content {
+        padding: 1rem;
+    }
+}

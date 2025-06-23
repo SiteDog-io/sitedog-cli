@@ -1,0 +1,31 @@
+stages:
+  - build
+  - deploy
+
+variables:
+  DOCKER_IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
+  DOCKER_LATEST: $CI_REGISTRY_IMAGE:latest
+
+build:
+  stage: build
+  image: docker:latest
+  services:
+    - docker:dind
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - docker build -t $DOCKER_IMAGE .
+    - docker tag $DOCKER_IMAGE $DOCKER_LATEST
+    - docker push $DOCKER_IMAGE
+    - docker push $DOCKER_LATEST
+  only:
+    - main
+
+deploy:
+  stage: deploy
+  image: alpine:latest
+  script:
+    - echo "Deploying $CI_REGISTRY_IMAGE to production"
+    - kubectl set image deployment/my-app app=$DOCKER_IMAGE
+  only:
+    - main

@@ -1,0 +1,16 @@
+[poeditor]
+api_token = fake-poeditor-token-for-testing
+project_id = 123456
+
+[download]
+type = json
+language = all
+filters = translated
+tags = web
+
+[upload]
+updating = terms_translations
+sync_terms = 1
+language = en
+overwrite = 1
+fuzzy_trigger = 1

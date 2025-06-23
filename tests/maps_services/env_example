@@ -1,0 +1,42 @@
+# Maps & Geocoding Service API Keys
+
+# Google Maps Platform
+GOOGLE_MAPS_API_KEY=fake-google-maps-key-1234567890abcdef
+MAPS_API_KEY=fake-google-maps-key-1234567890abcdef
+
+# Mapbox
+MAPBOX_ACCESS_TOKEN=pk.fake-mapbox-token-1234567890abcdef
+MAPBOX_API_KEY=sk.fake-mapbox-secret-key-1234567890abcdef
+
+# HERE Maps
+HERE_API_KEY=fake-here-api-key-1234567890abcdef
+HERE_APP_ID=fake-here-app-id-12345
+HERE_APP_CODE=fake-here-app-code-1234567890abcdef
+
+# OpenCage Geocoding
+OPENCAGE_API_KEY=fake-opencage-key-1234567890abcdef
+
+# MapQuest
+MAPQUEST_API_KEY=fake-mapquest-key-1234567890abcdef
+
+# TomTom
+TOMTOM_API_KEY=fake-tomtom-key-1234567890abcdef
+
+# Bing Maps
+BING_MAPS_API_KEY=fake-bing-maps-key-1234567890abcdef
+
+# LocationIQ
+LOCATIONIQ_API_KEY=fake-locationiq-key-1234567890abcdef
+
+# PositionStack
+POSITIONSTACK_API_KEY=fake-positionstack-key-1234567890abcdef
+
+# Geocodio
+GEOCODIO_API_KEY=fake-geocodio-key-1234567890abcdef
+
+# IPGeolocation
+IPGEOLOCATION_API_KEY=fake-ipgeolocation-key-1234567890abcdef
+
+# What3Words
+WHAT3WORDS_API_KEY=fake-what3words-key-1234567890abcdef
+W3W_API_KEY=fake-w3w-key-1234567890abcdef

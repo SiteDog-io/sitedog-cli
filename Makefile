@@ -12,6 +12,10 @@ help:
 	@echo "  install             - Install sitedog"
 	@echo "  uninstall           - Uninstall sitedog"
 	@echo "  reinstall           - Uninstall and install sitedog"
+	@echo "  test                - Run all detector tests"
+	@echo "  stats               - Show detector statistics"
+	@echo "  stats!              - Show detailed detector information"
+	@echo "  detectors           - List all available detectors"
 
 push:
 	rm -rf sitedog_gist
@@ -58,5 +62,33 @@ uninstall:
 	scripts/uninstall.sh
 
 reinstall: uninstall install
+
+test:
+	cd tests && go run run_tests.go
+
+stats:
+	cd tests && go run run_tests.go | grep -E "(Testing|Found)" | awk '/Testing/ {name=$$0} /Found/ {print name " - " $$0}' | sed 's/=== Testing \(.*\) Detector ===/\1:/' | sed 's/ - Found \([0-9]*\) services:/ → \1 services/'
+
+stats!:
+	cd tests && go run run_tests.go | grep -E "(Testing|Detector:|Description:|Should run:|Found|^  [0-9]+\.)" | sed 's/=== Testing \(.*\) Detector ===/\n🔍 \1/' | sed 's/Detector: \(.*\)/   Name: \1/' | sed 's/Description: \(.*\)/   Description: \1/' | sed 's/Should run: \(.*\)/   Status: \1/' | sed 's/Found \([0-9]*\) services:/   Services (\1):/' | sed 's/^  \([0-9]*\)\. \(.*\)/     • \2/'
+
+detectors:
+	@echo "📋 All Available Detectors:"
+	@echo ""
+	@make stats!
+
+dev-install:
+	@echo "Detecting platform and architecture..."
+	@PLATFORM=$$(uname -s | tr '[:upper:]' '[:lower:]'); \
+	ARCH=$$(uname -m); \
+	if [ "$$ARCH" = "x86_64" ]; then \
+		ARCH="amd64"; \
+	elif [ "$$ARCH" = "aarch64" ]; then \
+		ARCH="arm64"; \
+	fi; \
+	BINARY="sitedog-$$PLATFORM-$$ARCH"; \
+	echo "Installing $$BINARY as sitedog-dev..."; \
+	sudo ln -sf $(PWD)/dist/$$BINARY /usr/local/bin/sitedog-dev; \
+	echo "Development version installed successfully!"
 
 .DEFAULT_GOAL := help

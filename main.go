@@ -32,15 +32,8 @@ const (
 	globalTemplatePath = ".sitedog/demo.html.tpl"
 	authFilePath       = ".sitedog/auth"
 	apiBaseURL         = "https://app.sitedog.io" // Change to your actual API URL
-	Version            = "v0.2.1"
-	exampleConfig      = `# Describe your project with a free key-value format, think simple.
-#
-# Random sample:
-registrar: gandi # registrar service
-dns: Route 53 # dns service
-hosting: https://carrd.com # hosting service
-mail: zoho # mail service
-`
+	Version            = "v0.3.0"
+	exampleConfig      = ``
 )
 
 func main() {
@@ -101,6 +94,10 @@ Options for render:
 Options for scan:
   --config PATH    Path to config file (default: ./sitedog.yml)
   --detector NAME  Run specific detector only (git, gitlab-ci, github-actions, gemfile, vercel, netlify, heroku, firebase)
+  --preview        Preview mode - output to stdout instead of writing to file
+  --debug          Debug mode - show detection details and reasoning
+  --verbose        Verbose mode - show all detector activity including skipped ones
+  --deep           Deep search mode - scan all source files (slower but more thorough)
 
 Examples:
   sitedog init --config my-config.yml
@@ -113,13 +110,10 @@ Examples:
   sitedog render --output index.html
   sitedog scan --config my-config.yml
   sitedog scan --detector git
-  sitedog scan --detector gitlab-ci
-  sitedog scan --detector github-actions
-  sitedog scan --detector gemfile
-  sitedog scan --detector vercel
-  sitedog scan --detector netlify
-  sitedog scan --detector heroku
-  sitedog scan --detector firebase`)
+  sitedog scan --preview
+  sitedog scan --debug
+  sitedog scan --verbose --debug
+  sitedog scan --deep --debug`)
 }
 
 func handleInit() {
@@ -578,37 +572,54 @@ func getFaviconCache(config []byte) []byte {
 	return jsonData
 }
 
-
-
 // handleScan runs all available detectors and suggests config additions
 func handleScan() {
 	scanFlags := flag.NewFlagSet("scan", flag.ExitOnError)
 	configFile := scanFlags.String("config", defaultConfigPath, "Path to config file")
 	detectorName := scanFlags.String("detector", "", "Run specific detector only (git, package, docker, etc.)")
+	preview := scanFlags.Bool("preview", false, "Preview mode - output to stdout instead of writing to file")
+	debug := scanFlags.Bool("debug", false, "Debug mode - show detection details and reasoning")
+	verbose := scanFlags.Bool("verbose", false, "Verbose mode - show all detector activity including skipped ones")
+	deep := scanFlags.Bool("deep", false, "Deep search mode - scan all source files (slower but more thorough)")
 	scanFlags.Parse(os.Args[2:])
 
-	// Check if config file exists
-	if _, err := os.Stat(*configFile); err != nil {
-		fmt.Printf("Config file %s not found. Run 'sitedog init' first.\n", *configFile)
-		os.Exit(1)
-	}
-
-	// Read existing config
-	configData, err := ioutil.ReadFile(*configFile)
-	if err != nil {
-		fmt.Println("Error reading config file:", err)
-		os.Exit(1)
-	}
-
-	// Parse YAML config
+	// Check if config file exists, create if it doesn't
 	var config map[string]interface{}
-	if err := yaml.Unmarshal(configData, &config); err != nil {
-		fmt.Println("Error parsing config file:", err)
-		os.Exit(1)
+	var configData []byte
+
+	if _, err := os.Stat(*configFile); err != nil {
+		// Config file doesn't exist, we'll create it when we have something to add
+		fmt.Printf("Config file %s not found. Creating new one...\n", *configFile)
+
+		// Get current directory name for project name
+		currentDir, _ := os.Getwd()
+		projectName := filepath.Base(currentDir)
+
+		// Create basic config structure in memory only
+		config = map[string]interface{}{
+			projectName: map[string]interface{}{},
+		}
+		// Don't write the file yet - wait until we have actual content to add
+	} else {
+		// Read existing config
+		configData, err = ioutil.ReadFile(*configFile)
+		if err != nil {
+			fmt.Println("Error reading config file:", err)
+			os.Exit(1)
+		}
+
+		// Parse YAML config
+		if err := yaml.Unmarshal(configData, &config); err != nil {
+			fmt.Println("Error parsing config file:", err)
+			os.Exit(1)
+		}
 	}
 
 	// Initialize all detectors
 	allDetectors := detectors.GetAllDetectors()
+
+	// Set deep search mode
+	detectors.DeepSearchMode = *deep
 
 	// Filter detectors if specific one requested
 	if *detectorName != "" {
@@ -626,6 +637,9 @@ func handleScan() {
 	var conflicts []*ConflictResult
 	for _, detector := range allDetectors {
 		if !detector.ShouldRun() {
+			if *verbose {
+				fmt.Printf("Skipping %s detector (ShouldRun = false)\n", detector.Name())
+			}
 			continue
 		}
 
@@ -638,6 +652,32 @@ func handleScan() {
 
 		for _, result := range detectorResults {
 			if result != nil {
+				// Add fallback debug information if not provided by detector
+				if *debug && result.DebugInfo == "" {
+					result.DebugInfo = fmt.Sprintf("Detected by %s detector", detector.Name())
+				}
+				if *debug && result.SourceFile == "" {
+					result.SourceFile = "project files"
+				}
+				if *debug && result.SourceLine == 0 {
+					result.SourceLine = 1
+				}
+				if *debug && result.SourceText == "" {
+					result.SourceText = fmt.Sprintf("Detection: %s", result.Description)
+				}
+
+				if *debug {
+					fmt.Printf("  → %s (confidence: %.0f%%)\n", result.Description, result.Confidence*100)
+					fmt.Printf("    📄 %s", result.DebugInfo)
+					if result.SourceFile != "" && result.SourceLine > 0 {
+						fmt.Printf(" (%s:%d)", result.SourceFile, result.SourceLine)
+					}
+					fmt.Printf("\n")
+					if result.SourceText != "" {
+						fmt.Printf("    📝 %s\n", result.SourceText)
+					}
+				}
+
 				conflict := checkForConflict(config, result.Key, result.Value)
 				if conflict == nil {
 					results = append(results, result)
@@ -693,15 +733,117 @@ func handleScan() {
 
 	addedCount := 0
 
+	// Preview mode - just show what would be added
+	if *preview {
+		allResults := append(append(autoAddResults, conditionalResults...), askUserResults...)
+		if len(allResults) > 0 {
+			fmt.Printf("\nDetected %d services:\n", len(allResults))
+
+			// Group results by category for better display
+			categories := make(map[string][]*detectors.DetectionResult)
+			for _, result := range allResults {
+				category := getCategoryFromKey(result.Key)
+				categories[category] = append(categories[category], result)
+			}
+
+			// Display by category
+			for category, categoryResults := range categories {
+				fmt.Printf("\n%s:\n", strings.Title(category))
+				for _, result := range categoryResults {
+					fmt.Printf("  - %s: %v\n", result.Key, result.Value)
+				}
+			}
+
+			// Create preview YAML
+			fmt.Printf("\nPreview YAML:\n")
+			fmt.Println("---")
+
+			// Update config with all detected results
+			currentDir, _ := os.Getwd()
+			projectName := filepath.Base(currentDir)
+
+			var projectMap map[string]interface{}
+			if projectConfig, exists := config[projectName]; exists {
+				if pMap, ok := projectConfig.(map[string]interface{}); ok {
+					projectMap = pMap
+				} else {
+					projectMap = map[string]interface{}{}
+				}
+			} else {
+				projectMap = map[string]interface{}{}
+				config[projectName] = projectMap
+			}
+
+			// Add results, creating arrays for duplicate keys
+			for _, result := range allResults {
+				if existing, exists := projectMap[result.Key]; exists {
+					// Key already exists, convert to array or add to existing array
+					if existingArray, isArray := existing.([]interface{}); isArray {
+						// Add to existing array
+						projectMap[result.Key] = append(existingArray, result.Value)
+					} else {
+						// Convert single value to array
+						projectMap[result.Key] = []interface{}{existing, result.Value}
+					}
+				} else {
+					// New key, just add the value
+					projectMap[result.Key] = result.Value
+				}
+			}
+
+			// Output YAML
+			yamlData, _ := yaml.Marshal(config)
+			fmt.Print(string(yamlData))
+		} else {
+			fmt.Println("No services detected.")
+		}
+		return
+	}
+
 	// Auto-add high confidence results
 	if len(autoAddResults) > 0 {
 		fmt.Printf("\nAuto-adding %d platform essential service(s):\n", len(autoAddResults))
 		for _, result := range autoAddResults {
-			if err := addKeyToConfig(*configFile, result.Key, result.Value); err != nil {
-				fmt.Printf("Error adding %s: %v\n", result.Key, err)
+			// Check for conflicts before adding
+			conflict := checkForConflict(config, result.Key, result.Value)
+			if conflict != nil {
+				// Handle conflict automatically for high confidence results
+				if conflict.Type == KeyExists {
+					fmt.Printf("Converting %s to array format (multiple values detected)\n", result.Key)
+					if err := convertToArrayAndAdd(*configFile, result.Key, result.Value); err != nil {
+						fmt.Printf("Error converting %s to array: %v\n", result.Key, err)
+					} else {
+						fmt.Printf("✓ Added %s: %v to array\n", result.Key, result.Value)
+						addedCount++
+						// Reload config after addition
+						configData, _ := ioutil.ReadFile(*configFile)
+						yaml.Unmarshal(configData, &config)
+					}
+				} else if conflict.Type == ExactMatch {
+					fmt.Printf("Skipping %s: %s\n", result.Key, conflict.Reason)
+				} else {
+					// For other conflicts, add anyway with auto-generated key
+					if err := addKeyToConfig(*configFile, result.Key, result.Value); err != nil {
+						fmt.Printf("Error adding %s: %v\n", result.Key, err)
+					} else {
+						fmt.Printf("✓ Added %s: %v\n", result.Key, result.Value)
+						addedCount++
+						// Reload config after addition
+						configData, _ := ioutil.ReadFile(*configFile)
+						yaml.Unmarshal(configData, &config)
+					}
+				}
 			} else {
-				fmt.Printf("✓ Added %s: %v\n", result.Key, result.Value)
-				addedCount++
+				// No conflict, add normally
+				if err := addKeyToConfig(*configFile, result.Key, result.Value); err != nil {
+					fmt.Printf("Error adding %s: %v\n", result.Key, err)
+				} else {
+					fmt.Printf("✓ Added %s: %v\n", result.Key, result.Value)
+					addedCount++
+					// Reload config after each addition to detect conflicts
+					configData, _ := ioutil.ReadFile(*configFile)
+					yaml.Unmarshal(configData, &config)
+				}
 			}
 		}
 	}
@@ -710,13 +852,54 @@ func handleScan() {
 	if len(conditionalResults) > 0 {
 		fmt.Printf("\nAuto-adding %d platform common service(s):\n", len(conditionalResults))
 		for _, result := range conditionalResults {
-			if err := addKeyToConfig(*configFile, result.Key, result.Value); err != nil {
-				fmt.Printf("Error adding %s: %v\n", result.Key, err)
+			// Check for conflicts before adding
+			conflict := checkForConflict(config, result.Key, result.Value)
+			if conflict != nil {
+				// Handle conflict automatically for medium confidence results
+				if conflict.Type == KeyExists {
+					fmt.Printf("Converting %s to array format (multiple values detected)\n", result.Key)
+					if err := convertToArrayAndAdd(*configFile, result.Key, result.Value); err != nil {
+						fmt.Printf("Error converting %s to array: %v\n", result.Key, err)
+					} else {
+						fmt.Printf("✓ Added %s: %v to array\n", result.Key, result.Value)
+						addedCount++
+						// Reload config after addition
+						configData, _ := ioutil.ReadFile(*configFile)
+						yaml.Unmarshal(configData, &config)
+					}
+				} else if conflict.Type == ExactMatch {
+					fmt.Printf("Skipping %s: %s\n", result.Key, conflict.Reason)
+				} else {
+					// For other conflicts, add anyway
+					if err := addKeyToConfig(*configFile, result.Key, result.Value); err != nil {
+						fmt.Printf("Error adding %s: %v\n", result.Key, err)
+					} else {
+						fmt.Printf("✓ Added %s: %v\n", result.Key, result.Value)
+						addedCount++
+						// Reload config after each addition to detect conflicts
+						configData, _ := ioutil.ReadFile(*configFile)
+						yaml.Unmarshal(configData, &config)
+					}
+				}
 			} else {
-				fmt.Printf("✓ Added %s: %v\n", result.Key, result.Value)
-				addedCount++
+				// No conflict, add normally
+				if err := addKeyToConfig(*configFile, result.Key, result.Value); err != nil {
+					fmt.Printf("Error adding %s: %v\n", result.Key, err)
+				} else {
+					fmt.Printf("✓ Added %s: %v\n", result.Key, result.Value)
+					addedCount++
+					// Reload config after each addition to detect conflicts
+					configData, _ := ioutil.ReadFile(*configFile)
+					yaml.Unmarshal(configData, &config)
+				}
 			}
 		}
+	}
+
+	// Final config reload before processing optional services to ensure we have the latest state
+	if addedCount > 0 {
+		configData, _ := ioutil.ReadFile(*configFile)
+		yaml.Unmarshal(configData, &config)
 	}
 
 	// Ask user for lower confidence results
@@ -734,11 +917,32 @@ func handleScan() {
 			fmt.Scanln(&response)
 
 			if strings.ToLower(strings.TrimSpace(response)) == "y" {
-				if err := addKeyToConfig(*configFile, result.Key, result.Value); err != nil {
-					fmt.Printf("Error adding %s: %v\n", result.Key, err)
+				// Check for conflicts before adding
+				conflict := checkForConflict(config, result.Key, result.Value)
+				if conflict != nil {
+					// Handle conflict by asking user
+					conflictResult := &ConflictResult{
+						Original: result,
+						Conflict: conflict,
+					}
+					added := handleConflict(*configFile, conflictResult)
+					if added > 0 {
+						addedCount += added
+						// Reload config after addition
+						configData, _ := ioutil.ReadFile(*configFile)
+						yaml.Unmarshal(configData, &config)
+					}
 				} else {
-					fmt.Printf("✓ Added %s: %v\n", result.Key, result.Value)
-					addedCount++
+					// No conflict, add normally
+					if err := addKeyToConfig(*configFile, result.Key, result.Value); err != nil {
+						fmt.Printf("Error adding %s: %v\n", result.Key, err)
+					} else {
+						fmt.Printf("✓ Added %s: %v\n", result.Key, result.Value)
+						addedCount++
+						// Reload config after each addition to detect conflicts
+						configData, _ := ioutil.ReadFile(*configFile)
+						yaml.Unmarshal(configData, &config)
+					}
 				}
 			} else {
 				fmt.Println("Skipped.")
@@ -747,6 +951,34 @@ func handleScan() {
 	}
 
 	fmt.Printf("\nSuccessfully added %d item(s) to %s\n", addedCount+totalAdded, *configFile)
+}
+
+// getCategoryFromKey determines the category based on the detection result key
+func getCategoryFromKey(key string) string {
+	switch key {
+	case "language":
+		return "languages"
+	case "ci_service":
+		return "ci/cd"
+	case "hosting_service":
+		return "hosting"
+	case "push_service":
+		return "push notifications"
+	case "image_service":
+		return "image processing"
+	case "search_service":
+		return "search"
+	case "ai_service":
+		return "ai/ml"
+	case "maps_service":
+		return "maps & location"
+	case "i18n_service":
+		return "internationalization"
+	case "container_registry":
+		return "container registries"
+	default:
+		return "services"
+	}
 }
 
 // ConflictType represents the type of conflict
@@ -875,7 +1107,18 @@ func handleConflict(configFile string, conflict *ConflictResult) int {
 		return 0
 	}
 
-	// Pre-calculate what the new key would be
+	// For key conflicts with different values, automatically convert to array
+	if conflictInfo.Type == KeyExists {
+		fmt.Printf("Converting %s to array format (multiple values detected)\n", result.Key)
+		if err := convertToArrayAndAdd(configFile, result.Key, result.Value); err != nil {
+			fmt.Printf("Error converting %s to array: %v\n", result.Key, err)
+			return 0
+		}
+		fmt.Printf("✓ Added %s: %v to array\n", result.Key, result.Value)
+		return 1
+	}
+
+	// Pre-calculate what the new key would be for other conflict types
 	configData, _ := ioutil.ReadFile(configFile)
 	var config map[string]interface{}
 	yaml.Unmarshal(configData, &config)
@@ -914,7 +1157,7 @@ func handleConflict(configFile string, conflict *ConflictResult) int {
 		}
 		fmt.Printf("✓ Overwritten %s: %v\n", result.Key, result.Value)
 		return 1
-		case "2":
+	case "2":
 		// Add as new key (newKey is already calculated)
 		if err := addKeyToConfig(configFile, newKey, result.Value); err != nil {
 			fmt.Printf("Error adding %s: %v\n", newKey, err)
@@ -985,8 +1228,24 @@ func keyExistsInConfig(config map[string]interface{}, key string, value interfac
 
 // addKeyToConfig adds any key-value pair to the config file while preserving order
 func addKeyToConfig(configFile, key string, value interface{}) error {
+	// Check if config file exists
+	var configData []byte
+	var err error
+
+	if _, err := os.Stat(configFile); err != nil {
+		// File doesn't exist, create new config with the key
+		dir, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+		projectKey := filepath.Base(dir)
+		keyLine := formatKeyValue(key, value, 2)
+		newConfig := fmt.Sprintf("%s:\n%s\n", projectKey, keyLine)
+		return ioutil.WriteFile(configFile, []byte(newConfig), 0644)
+	}
+
 	// Read existing config as text
-	configData, err := ioutil.ReadFile(configFile)
+	configData, err = ioutil.ReadFile(configFile)
 	if err != nil {
 		return err
 	}
@@ -1089,6 +1348,12 @@ func addKeyToConfig(configFile, key string, value interface{}) error {
 
 // replaceKeyInConfig replaces existing key with new value in config file
 func replaceKeyInConfig(configFile, key string, value interface{}) error {
+	// Check if config file exists
+	if _, err := os.Stat(configFile); err != nil {
+		// File doesn't exist, create new config with the key
+		return addKeyToConfig(configFile, key, value)
+	}
+
 	// Read existing config as text
 	configData, err := ioutil.ReadFile(configFile)
 	if err != nil {
@@ -1157,6 +1422,68 @@ func replaceKeyInConfig(configFile, key string, value interface{}) error {
 	return fmt.Errorf("could not find key '%s' to replace", key)
 }
 
+// convertToArrayAndAdd converts an existing key-value pair to an array and adds a new value
+func convertToArrayAndAdd(configFile, key string, newValue interface{}) error {
+	// Check if config file exists
+	if _, err := os.Stat(configFile); err != nil {
+		// File doesn't exist, create new config with the key
+		return addKeyToConfig(configFile, key, newValue)
+	}
+
+	// Read existing config
+	configData, err := ioutil.ReadFile(configFile)
+	if err != nil {
+		return err
+	}
+
+	// Parse YAML to get current value
+	var config map[string]interface{}
+	if err := yaml.Unmarshal(configData, &config); err != nil {
+		return err
+	}
+
+	// Find the existing value
+	var existingValue interface{}
+	var found bool
+
+	// Check nested objects for the key
+	for _, configValue := range config {
+		if nestedMap, ok := configValue.(map[interface{}]interface{}); ok {
+			if existing, exists := nestedMap[key]; exists {
+				existingValue = existing
+				found = true
+				break
+			}
+		}
+		if nestedMap, ok := configValue.(map[string]interface{}); ok {
+			if existing, exists := nestedMap[key]; exists {
+				existingValue = existing
+				found = true
+				break
+			}
+		}
+	}
+
+	if !found {
+		return fmt.Errorf("key '%s' not found", key)
+	}
+
+	// Create array with existing value and new value
+	var arrayValue []interface{}
+
+	// Check if existing value is already an array
+	if existingArray, isArray := existingValue.([]interface{}); isArray {
+		// Add to existing array
+		arrayValue = append(existingArray, newValue)
+	} else {
+		// Convert single value to array
+		arrayValue = []interface{}{existingValue, newValue}
+	}
+
+	// Replace the key with the array
+	return replaceKeyInConfig(configFile, key, arrayValue)
+}
+
 // getIndentLevel returns the number of spaces at the beginning of a line
 func getIndentLevel(line string) int {
 	count := 0
@@ -1197,10 +1524,17 @@ func formatKeyValue(key string, value interface{}, indent int) string {
 		}
 		return strings.Join(lines, "\n")
 	case []string:
-		// For arrays
+		// For string arrays
 		lines := []string{fmt.Sprintf("%s%s:", indentStr, key)}
 		for _, item := range v {
 			lines = append(lines, fmt.Sprintf("%s- %s", indentStr, item))
+		}
+		return strings.Join(lines, "\n")
+	case []interface{}:
+		// For interface arrays (mixed types)
+		lines := []string{fmt.Sprintf("%s%s:", indentStr, key)}
+		for _, item := range v {
+			lines = append(lines, fmt.Sprintf("%s- %v", indentStr, item))
 		}
 		return strings.Join(lines, "\n")
 	default:

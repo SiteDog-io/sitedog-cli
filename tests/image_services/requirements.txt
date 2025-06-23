@@ -1,0 +1,14 @@
+cloudinary==1.36.0
+pyuploadcare==5.0.0
+imagekitio==3.2.0
+tinify==1.6.0
+krakenio==1.0.0
+optimole==1.0.0
+shortpixel==1.0.0
+imageoptim==1.0.0
+imagify==1.0.0
+python-unsplash==1.1.0
+pexels-api==1.0.1
+pixabay==2.3
+shutterstock-api==1.0.4
+imgproxy==1.0.0

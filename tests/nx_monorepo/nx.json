@@ -1,0 +1,15 @@
+{
+  "npmScope": "test-nx-workspace",
+  "affected": {
+    "defaultBase": "origin/main"
+  },
+  "implicitDependencies": {
+    "package.json": {
+      "dependencies": "*",
+      "devDependencies": "*"
+    }
+  },
+  "projects": {},
+  "defaultProject": "test-app",
+  "nxCloudAccessToken": "fake-nx-cloud-token-for-testing"
+}

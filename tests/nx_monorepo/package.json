@@ -1,0 +1,15 @@
+{
+  "name": "test-nx-workspace",
+  "version": "0.0.0",
+  "license": "MIT",
+  "scripts": {
+    "build": "nx build",
+    "test": "nx test"
+  },
+  "private": true,
+  "devDependencies": {
+    "@nx/workspace": "17.0.0",
+    "@nx/react": "17.0.0",
+    "nx": "17.0.0"
+  }
+}

@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  imgproxy:
+    image: darthsim/imgproxy:latest
+    ports:
+      - "8080:8080"
+    environment:
+      IMGPROXY_KEY: "fake-imgproxy-key-1234567890abcdef"
+      IMGPROXY_SALT: "fake-imgproxy-salt-1234567890abcdef"
+      IMGPROXY_BIND: "0.0.0.0:8080"
+      IMGPROXY_LOCAL_FILESYSTEM_ROOT: "/var/lib/imgproxy"
+    volumes:
+      - ./images:/var/lib/imgproxy
+    restart: unless-stopped

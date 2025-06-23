@@ -1,0 +1,9 @@
+googlemaps==4.10.0
+mapbox==0.18.1
+opencage==2.2.0
+python-opencage-geocoder==1.4.2
+here-location-services==0.5.0
+what3words==3.1.1
+geopy==2.4.1
+folium==0.14.0
+geopandas==0.14.1

@@ -1,0 +1,14 @@
+{
+  "welcome": "Welcome",
+  "hello": "Hello {{name}}",
+  "navigation": {
+    "home": "Home",
+    "about": "About",
+    "contact": "Contact"
+  },
+  "buttons": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "submit": "Submit"
+  }
+}

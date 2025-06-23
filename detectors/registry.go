@@ -1,5 +1,8 @@
 package detectors
 
+// Global flag for deep search mode
+var DeepSearchMode bool
+
 // GetAllDetectors returns all available detectors
 func GetAllDetectors() []Detector {
 	return []Detector{
@@ -24,6 +27,16 @@ func GetAllDetectors() []Detector {
 		&AndroidDetector{},
 		&ChromeExtensionDetector{},
 		&VSCodeExtensionDetector{},
+		&ShopifyDetector{},
+		&NxDetector{},
+		&WordPressDetector{},
+		&ContainerRegistryDetector{},
+		&I18nDetector{},
+		&AIServicesDetector{},
+		&SearchServicesDetector{},
+		&MapsServicesDetector{},
+		&PushNotificationsDetector{},
+		&ImageServicesDetector{},
 		&VercelDetector{},
 		&NetlifyDetector{},
 		&HerokuDetector{},

@@ -169,6 +169,54 @@ func main() {
 			TestDir:   "hosting",
 			TestFiles: []string{"fly.toml"},
 		},
+		{
+			Name:      "WordPress",
+			Detector:  &detectors.WordPressDetector{},
+			TestDir:   "wordpress",
+			TestFiles: []string{"wp-config.php", "style.css"},
+		},
+		{
+			Name:      "Container Registry",
+			Detector:  &detectors.ContainerRegistryDetector{},
+			TestDir:   "container_registry",
+			TestFiles: []string{"Dockerfile", ".gitlab-ci.yml", ".github/workflows/docker.yml", "Makefile", "package.json"},
+		},
+		{
+			Name:      "I18n/Translation Services",
+			Detector:  &detectors.I18nDetector{},
+			TestDir:   "i18n",
+			TestFiles: []string{"package.json", "crowdin.yml", ".lokaliserc", ".phraseapp.yml", ".tx/config", "tolgee.json", "locales/en/common.json"},
+		},
+		{
+			Name:      "AI/ML Services",
+			Detector:  &detectors.AIServicesDetector{},
+			TestDir:   "ai_services",
+			TestFiles: []string{"package.json", "requirements.txt", "env_example", "src/ai_client.py", "src/ai_client.js"},
+		},
+		{
+			Name:      "Search Services",
+			Detector:  &detectors.SearchServicesDetector{},
+			TestDir:   "search_services",
+			TestFiles: []string{"package.json", "requirements.txt", "env_example"},
+		},
+		{
+			Name:      "Maps & Location Services",
+			Detector:  &detectors.MapsServicesDetector{},
+			TestDir:   "maps_services",
+			TestFiles: []string{"package.json", "requirements.txt", "env_example"},
+		},
+		{
+			Name:      "Push Notifications",
+			Detector:  &detectors.PushNotificationsDetector{},
+			TestDir:   "push_notifications",
+			TestFiles: []string{"package.json", "requirements.txt", "env_example"},
+		},
+		{
+			Name:      "Image Processing Services",
+			Detector:  &detectors.ImageServicesDetector{},
+			TestDir:   "image_services",
+			TestFiles: []string{"package.json", "requirements.txt", "env_example", "docker-compose.yml"},
+		},
 	}
 
 	// Get current working directory
