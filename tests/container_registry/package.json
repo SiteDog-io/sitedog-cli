@@ -1,0 +1,23 @@
+{
+  "name": "my-app",
+  "version": "1.0.0",
+  "description": "Sample application with container registry",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "test": "jest",
+    "docker:build": "docker build -t my-app .",
+    "docker:push:hub": "docker tag my-app $DOCKER_USERNAME/my-app:latest && docker push $DOCKER_USERNAME/my-app:latest",
+    "docker:push:ghcr": "docker tag my-app ghcr.io/$GITHUB_REPOSITORY:latest && docker push ghcr.io/$GITHUB_REPOSITORY:latest",
+    "docker:push:ecr": "aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin 123456789.dkr.ecr.us-west-2.amazonaws.com && docker push 123456789.dkr.ecr.us-west-2.amazonaws.com/my-app:latest",
+    "deploy:heroku": "heroku container:push web -a my-app && heroku container:release web -a my-app"
+  },
+  "dependencies": {
+    "express": "^4.18.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.0",
+    "jest": "^28.0.0"
+  }
+}

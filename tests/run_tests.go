@@ -175,6 +175,12 @@ func main() {
 			TestDir:   "wordpress",
 			TestFiles: []string{"wp-config.php", "style.css"},
 		},
+		{
+			Name:      "Container Registry",
+			Detector:  &detectors.ContainerRegistryDetector{},
+			TestDir:   "container_registry",
+			TestFiles: []string{"Dockerfile", ".gitlab-ci.yml", ".github/workflows/docker.yml", "Makefile", "package.json"},
+		},
 	}
 
 	// Get current working directory
