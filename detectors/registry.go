@@ -22,6 +22,8 @@ func GetAllDetectors() []Detector {
 		&DartDetector{},
 		&IOSDetector{},
 		&AndroidDetector{},
+		&ChromeExtensionDetector{},
+		&VSCodeExtensionDetector{},
 		&VercelDetector{},
 		&NetlifyDetector{},
 		&HerokuDetector{},

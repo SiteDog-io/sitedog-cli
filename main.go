@@ -676,29 +676,73 @@ func handleScan() {
 		return
 	}
 
-	// Ask for each result individually
-	fmt.Printf("\nFound %d suggestion(s):\n", len(results))
-	addedCount := 0
-	for i, result := range results {
-		fmt.Printf("\n%d. %s\n", i+1, result.Description)
-		fmt.Printf("   %s: %v\n", result.Key, result.Value)
-		if result.Confidence < 1.0 {
-			fmt.Printf("   (Confidence: %.0f%%)\n", result.Confidence*100)
+	// Separate results by confidence level
+	var autoAddResults []*detectors.DetectionResult
+	var conditionalResults []*detectors.DetectionResult
+	var askUserResults []*detectors.DetectionResult
+
+	for _, result := range results {
+		if result.Confidence >= 0.95 {
+			autoAddResults = append(autoAddResults, result)
+		} else if result.Confidence >= 0.90 {
+			conditionalResults = append(conditionalResults, result)
+		} else {
+			askUserResults = append(askUserResults, result)
 		}
+	}
 
-		fmt.Print("Add this to config? (y/N): ")
-		var response string
-		fmt.Scanln(&response)
+	addedCount := 0
 
-		if strings.ToLower(strings.TrimSpace(response)) == "y" {
+	// Auto-add high confidence results
+	if len(autoAddResults) > 0 {
+		fmt.Printf("\nAuto-adding %d platform essential service(s):\n", len(autoAddResults))
+		for _, result := range autoAddResults {
 			if err := addKeyToConfig(*configFile, result.Key, result.Value); err != nil {
 				fmt.Printf("Error adding %s: %v\n", result.Key, err)
 			} else {
 				fmt.Printf("✓ Added %s: %v\n", result.Key, result.Value)
 				addedCount++
 			}
-		} else {
-			fmt.Println("Skipped.")
+		}
+	}
+
+	// Conditionally auto-add medium confidence results
+	if len(conditionalResults) > 0 {
+		fmt.Printf("\nAuto-adding %d platform common service(s):\n", len(conditionalResults))
+		for _, result := range conditionalResults {
+			if err := addKeyToConfig(*configFile, result.Key, result.Value); err != nil {
+				fmt.Printf("Error adding %s: %v\n", result.Key, err)
+			} else {
+				fmt.Printf("✓ Added %s: %v\n", result.Key, result.Value)
+				addedCount++
+			}
+		}
+	}
+
+	// Ask user for lower confidence results
+	if len(askUserResults) > 0 {
+		fmt.Printf("\nFound %d optional service(s):\n", len(askUserResults))
+		for i, result := range askUserResults {
+			fmt.Printf("\n%d. %s\n", i+1, result.Description)
+			fmt.Printf("   %s: %v\n", result.Key, result.Value)
+			if result.Confidence < 1.0 {
+				fmt.Printf("   (Confidence: %.0f%%)\n", result.Confidence*100)
+			}
+
+			fmt.Print("Add this to config? (y/N): ")
+			var response string
+			fmt.Scanln(&response)
+
+			if strings.ToLower(strings.TrimSpace(response)) == "y" {
+				if err := addKeyToConfig(*configFile, result.Key, result.Value); err != nil {
+					fmt.Printf("Error adding %s: %v\n", result.Key, err)
+				} else {
+					fmt.Printf("✓ Added %s: %v\n", result.Key, result.Value)
+					addedCount++
+				}
+			} else {
+				fmt.Println("Skipped.")
+			}
 		}
 	}
 

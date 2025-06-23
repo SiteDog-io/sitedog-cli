@@ -86,6 +86,18 @@ func main() {
 			TestFiles: []string{"app/build.gradle", "app/src/main/AndroidManifest.xml"},
 		},
 		{
+			Name:      "Chrome Extension",
+			Detector:  &detectors.ChromeExtensionDetector{},
+			TestDir:   "chrome_extension",
+			TestFiles: []string{"manifest.json"},
+		},
+		{
+			Name:      "VS Code Extension",
+			Detector:  &detectors.VSCodeExtensionDetector{},
+			TestDir:   "vscode_extension",
+			TestFiles: []string{"package.json"},
+		},
+		{
 			Name:      "CircleCI",
 			Detector:  &detectors.CircleCIDetector{},
 			TestDir:   "circleci",
