@@ -74,6 +74,18 @@ func main() {
 			TestFiles: []string{"pubspec.yaml"},
 		},
 		{
+			Name:      "iOS Platform",
+			Detector:  &detectors.IOSDetector{},
+			TestDir:   "ios",
+			TestFiles: []string{"Runner/Info.plist", "Podfile"},
+		},
+		{
+			Name:      "Android Platform",
+			Detector:  &detectors.AndroidDetector{},
+			TestDir:   "android",
+			TestFiles: []string{"app/build.gradle", "app/src/main/AndroidManifest.xml"},
+		},
+		{
 			Name:      "CircleCI",
 			Detector:  &detectors.CircleCIDetector{},
 			TestDir:   "circleci",

@@ -20,6 +20,8 @@ func GetAllDetectors() []Detector {
 		&DotNetDetector{},
 		&JavaDetector{},
 		&DartDetector{},
+		&IOSDetector{},
+		&AndroidDetector{},
 		&VercelDetector{},
 		&NetlifyDetector{},
 		&HerokuDetector{},
