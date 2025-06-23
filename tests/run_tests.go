@@ -169,6 +169,12 @@ func main() {
 			TestDir:   "hosting",
 			TestFiles: []string{"fly.toml"},
 		},
+		{
+			Name:      "WordPress",
+			Detector:  &detectors.WordPressDetector{},
+			TestDir:   "wordpress",
+			TestFiles: []string{"wp-config.php", "style.css"},
+		},
 	}
 
 	// Get current working directory
