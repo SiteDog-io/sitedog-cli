@@ -1,0 +1,19 @@
+{
+  "name": "maps-test-project",
+  "version": "1.0.0",
+  "dependencies": {
+    "@googlemaps/js-api-loader": "^1.16.2",
+    "react-google-maps": "^9.4.5",
+    "mapbox-gl": "^2.15.0",
+    "react-map-gl": "^7.1.6",
+    "@mapbox/mapbox-gl-geocoder": "^5.0.1",
+    "@here/maps-api-for-javascript": "^1.6.3",
+    "opencage-api-client": "^0.9.0",
+    "@tomtom-international/web-sdk-maps": "^6.23.0",
+    "what3words": "^3.0.0",
+    "leaflet": "^1.9.4"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

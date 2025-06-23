@@ -199,6 +199,12 @@ func main() {
 			TestDir:   "search_services",
 			TestFiles: []string{"package.json", "requirements.txt", "env_example"},
 		},
+		{
+			Name:      "Maps & Location Services",
+			Detector:  &detectors.MapsServicesDetector{},
+			TestDir:   "maps_services",
+			TestFiles: []string{"package.json", "requirements.txt", "env_example"},
+		},
 	}
 
 	// Get current working directory
