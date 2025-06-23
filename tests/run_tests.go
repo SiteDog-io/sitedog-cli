@@ -181,6 +181,12 @@ func main() {
 			TestDir:   "container_registry",
 			TestFiles: []string{"Dockerfile", ".gitlab-ci.yml", ".github/workflows/docker.yml", "Makefile", "package.json"},
 		},
+		{
+			Name:      "I18n/Translation Services",
+			Detector:  &detectors.I18nDetector{},
+			TestDir:   "i18n",
+			TestFiles: []string{"package.json", "crowdin.yml", ".lokaliserc", ".phraseapp.yml", ".tx/config", "tolgee.json", "locales/en/common.json"},
+		},
 	}
 
 	// Get current working directory

@@ -1,0 +1,52 @@
+{
+  "name": "i18n-test-app",
+  "version": "1.0.0",
+  "description": "Test app with internationalization",
+  "main": "index.js",
+  "scripts": {
+    "start": "next start",
+    "dev": "next dev",
+    "build": "next build",
+    "extract": "i18next-scanner",
+    "crowdin:upload": "crowdin upload sources",
+    "crowdin:download": "crowdin download",
+    "lokalise:upload": "lokalise2 file upload",
+    "lokalise:download": "lokalise2 file download",
+    "phrase:push": "phrase push",
+    "phrase:pull": "phrase pull",
+    "tx:push": "tx push -s",
+    "tx:pull": "tx pull -a",
+    "poeditor:upload": "poeditor upload",
+    "poeditor:download": "poeditor download"
+  },
+  "dependencies": {
+    "next": "^13.0.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "react-i18next": "^12.0.0",
+    "i18next": "^22.0.0",
+    "next-i18next": "^13.0.0",
+    "i18next-browser-languagedetector": "^7.0.0",
+    "@tolgee/react": "^4.0.0",
+    "@tolgee/i18next": "^4.0.0"
+  },
+  "devDependencies": {
+    "@crowdin/cli": "^3.0.0",
+    "@lokalise/cli-2": "^2.0.0",
+    "phrase-cli": "^2.0.0",
+    "transifex-client": "^0.14.0",
+    "poeditor-cli": "^1.0.0",
+    "i18next-scanner": "^4.0.0",
+    "i18next-parser": "^7.0.0"
+  },
+  "crowdin": {
+    "project_id": "123456",
+    "api_token": "fake-crowdin-token-for-testing",
+    "base_path": "./locales",
+    "preserve_hierarchy": true
+  },
+  "lokalise": {
+    "project_id": "987654321.abcdef",
+    "token": "fake-lokalise-token-for-testing"
+  }
+}

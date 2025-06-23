@@ -28,6 +28,7 @@ func GetAllDetectors() []Detector {
 		&NxDetector{},
 		&WordPressDetector{},
 		&ContainerRegistryDetector{},
+		&I18nDetector{},
 		&VercelDetector{},
 		&NetlifyDetector{},
 		&HerokuDetector{},

@@ -1,0 +1,16 @@
+[main]
+host = https://www.transifex.com
+api_hostname = https://api.transifex.com
+
+[o:my-org:p:my-project:r:main]
+file_filter = locales/<lang>.json
+source_file = locales/en.json
+source_lang = en
+type = KEYVALUEJSON
+minimum_perc = 80
+
+[o:my-org:p:my-project:r:components]
+file_filter = src/components/<lang>.json
+source_file = src/components/en.json
+source_lang = en
+type = KEYVALUEJSON

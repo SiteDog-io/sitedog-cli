@@ -1,0 +1,20 @@
+phrase:
+  access_token: fake-phrase-token-for-testing
+  project_id: abc123def456
+  file_format: json
+
+  push:
+    sources:
+      - file: ./locales/en/<locale_name>.json
+        params:
+          locale_id: en
+          file_format: json
+          update_translations: true
+
+  pull:
+    targets:
+      - file: ./locales/<locale_code>.json
+        params:
+          file_format: json
+          include_empty_translations: false
+          keep_notranslate_tags: true
