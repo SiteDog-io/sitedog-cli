@@ -68,6 +68,11 @@ dev-install:
 	sudo ln -sf $(PWD)/dist/$$BINARY /usr/local/bin/sitedog-dev; \
 	echo "Development version installed successfully!"
 
+dev-uninstall:
+	sudo rm -f /usr/local/bin/sitedog-dev
+
+dev-reinstall: dev-uninstall dev-install
+
 uninstall:
 	scripts/uninstall.sh
 
