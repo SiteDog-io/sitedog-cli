@@ -32,15 +32,8 @@ const (
 	globalTemplatePath = ".sitedog/demo.html.tpl"
 	authFilePath       = ".sitedog/auth"
 	apiBaseURL         = "https://app.sitedog.io" // Change to your actual API URL
-	Version            = "v0.2.1"
-	exampleConfig      = `# Describe your project with a free key-value format, think simple.
-#
-# Random sample:
-registrar: gandi # registrar service
-dns: Route 53 # dns service
-hosting: https://carrd.com # hosting service
-mail: zoho # mail service
-`
+	Version            = "v0.3.0"
+	exampleConfig      = ``
 )
 
 func main() {
@@ -101,6 +94,7 @@ Options for render:
 Options for scan:
   --config PATH    Path to config file (default: ./sitedog.yml)
   --detector NAME  Run specific detector only (git, gitlab-ci, github-actions, gemfile, vercel, netlify, heroku, firebase)
+  --preview        Preview mode - output to stdout instead of writing to file
 
 Examples:
   sitedog init --config my-config.yml
@@ -113,13 +107,7 @@ Examples:
   sitedog render --output index.html
   sitedog scan --config my-config.yml
   sitedog scan --detector git
-  sitedog scan --detector gitlab-ci
-  sitedog scan --detector github-actions
-  sitedog scan --detector gemfile
-  sitedog scan --detector vercel
-  sitedog scan --detector netlify
-  sitedog scan --detector heroku
-  sitedog scan --detector firebase`)
+  sitedog scan --preview`)
 }
 
 func handleInit() {
@@ -585,26 +573,48 @@ func handleScan() {
 	scanFlags := flag.NewFlagSet("scan", flag.ExitOnError)
 	configFile := scanFlags.String("config", defaultConfigPath, "Path to config file")
 	detectorName := scanFlags.String("detector", "", "Run specific detector only (git, package, docker, etc.)")
+	preview := scanFlags.Bool("preview", false, "Preview mode - output to stdout instead of writing to file")
 	scanFlags.Parse(os.Args[2:])
 
-	// Check if config file exists
-	if _, err := os.Stat(*configFile); err != nil {
-		fmt.Printf("Config file %s not found. Run 'sitedog init' first.\n", *configFile)
-		os.Exit(1)
-	}
-
-	// Read existing config
-	configData, err := ioutil.ReadFile(*configFile)
-	if err != nil {
-		fmt.Println("Error reading config file:", err)
-		os.Exit(1)
-	}
-
-	// Parse YAML config
+		// Check if config file exists, create if it doesn't
 	var config map[string]interface{}
-	if err := yaml.Unmarshal(configData, &config); err != nil {
-		fmt.Println("Error parsing config file:", err)
-		os.Exit(1)
+	var configData []byte
+
+	if _, err := os.Stat(*configFile); err != nil {
+		// Config file doesn't exist, create basic structure
+		fmt.Printf("Config file %s not found. Creating new one...\n", *configFile)
+
+		// Get current directory name for project name
+		currentDir, _ := os.Getwd()
+		projectName := filepath.Base(currentDir)
+
+		// Create basic config structure
+		config = map[string]interface{}{
+			projectName: map[string]interface{}{},
+		}
+
+		if !*preview {
+			// Write initial config to file
+			configData, _ = yaml.Marshal(config)
+			if err := ioutil.WriteFile(*configFile, configData, 0644); err != nil {
+				fmt.Println("Error creating config file:", err)
+				os.Exit(1)
+			}
+			fmt.Printf("Created %s\n", *configFile)
+		}
+	} else {
+		// Read existing config
+		configData, err = ioutil.ReadFile(*configFile)
+		if err != nil {
+			fmt.Println("Error reading config file:", err)
+			os.Exit(1)
+		}
+
+		// Parse YAML config
+		if err := yaml.Unmarshal(configData, &config); err != nil {
+			fmt.Println("Error parsing config file:", err)
+			os.Exit(1)
+		}
 	}
 
 	// Initialize all detectors
@@ -693,6 +703,59 @@ func handleScan() {
 
 	addedCount := 0
 
+	// Preview mode - just show what would be added
+	if *preview {
+		allResults := append(append(autoAddResults, conditionalResults...), askUserResults...)
+		if len(allResults) > 0 {
+			fmt.Printf("\nDetected %d services:\n", len(allResults))
+
+			// Group results by category for better display
+			categories := make(map[string][]*detectors.DetectionResult)
+			for _, result := range allResults {
+				category := getCategoryFromKey(result.Key)
+				categories[category] = append(categories[category], result)
+			}
+
+			// Display by category
+			for category, categoryResults := range categories {
+				fmt.Printf("\n%s:\n", strings.Title(category))
+				for _, result := range categoryResults {
+					fmt.Printf("  - %s: %v\n", result.Key, result.Value)
+				}
+			}
+
+			// Create preview YAML
+			fmt.Printf("\nPreview YAML:\n")
+			fmt.Println("---")
+
+			// Update config with all detected results
+			currentDir, _ := os.Getwd()
+			projectName := filepath.Base(currentDir)
+
+			if projectConfig, exists := config[projectName]; exists {
+				if projectMap, ok := projectConfig.(map[string]interface{}); ok {
+					for _, result := range allResults {
+						projectMap[result.Key] = result.Value
+					}
+				}
+			} else {
+				projectMap := map[string]interface{}{}
+				for _, result := range allResults {
+					projectMap[result.Key] = result.Value
+				}
+				config[projectName] = projectMap
+			}
+
+			// Output YAML
+			yamlData, _ := yaml.Marshal(config)
+			fmt.Print(string(yamlData))
+		} else {
+			fmt.Println("No services detected.")
+		}
+		return
+	}
+
+	// Normal mode - add to file
 	// Auto-add high confidence results
 	if len(autoAddResults) > 0 {
 		fmt.Printf("\nAuto-adding %d platform essential service(s):\n", len(autoAddResults))
@@ -747,6 +810,34 @@ func handleScan() {
 	}
 
 	fmt.Printf("\nSuccessfully added %d item(s) to %s\n", addedCount+totalAdded, *configFile)
+}
+
+// getCategoryFromKey determines the category based on the detection result key
+func getCategoryFromKey(key string) string {
+	switch key {
+	case "language":
+		return "languages"
+	case "ci_service":
+		return "ci/cd"
+	case "hosting_service":
+		return "hosting"
+	case "push_service":
+		return "push notifications"
+	case "image_service":
+		return "image processing"
+	case "search_service":
+		return "search"
+	case "ai_service":
+		return "ai/ml"
+	case "maps_service":
+		return "maps & location"
+	case "i18n_service":
+		return "internationalization"
+	case "container_registry":
+		return "container registries"
+	default:
+		return "services"
+	}
 }
 
 // ConflictType represents the type of conflict
