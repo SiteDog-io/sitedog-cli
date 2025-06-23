@@ -10,6 +10,7 @@ func GetAllDetectors() []Detector {
 		&VercelDetector{},
 		&NetlifyDetector{},
 		&HerokuDetector{},
+		&FirebaseDetector{},
 	}
 }
 

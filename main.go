@@ -100,7 +100,7 @@ Options for render:
 
 Options for scan:
   --config PATH    Path to config file (default: ./sitedog.yml)
-  --detector NAME  Run specific detector only (git, gitlab-ci, github-actions, gemfile, vercel, netlify, heroku)
+  --detector NAME  Run specific detector only (git, gitlab-ci, github-actions, gemfile, vercel, netlify, heroku, firebase)
 
 Examples:
   sitedog init --config my-config.yml
@@ -118,7 +118,8 @@ Examples:
   sitedog scan --detector gemfile
   sitedog scan --detector vercel
   sitedog scan --detector netlify
-  sitedog scan --detector heroku`)
+  sitedog scan --detector heroku
+  sitedog scan --detector firebase`)
 }
 
 func handleInit() {
