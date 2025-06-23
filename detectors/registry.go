@@ -9,6 +9,7 @@ func GetAllDetectors() []Detector {
 		&CircleCIDetector{},
 		&TravisCIDetector{},
 		&AzurePipelinesDetector{},
+		&JenkinsDetector{},
 		&GemfileDetector{},
 		&RequirementsDetector{},
 		&PackageJSONDetector{},
@@ -19,6 +20,9 @@ func GetAllDetectors() []Detector {
 		&NetlifyDetector{},
 		&HerokuDetector{},
 		&FirebaseDetector{},
+		&RailwayDetector{},
+		&RenderDetector{},
+		&FlyIODetector{},
 	}
 }
 

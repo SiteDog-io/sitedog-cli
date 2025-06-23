@@ -74,6 +74,12 @@ func main() {
 			TestFiles: []string{"azure-pipelines.yml"},
 		},
 		{
+			Name:      "Jenkins",
+			Detector:  &detectors.JenkinsDetector{},
+			TestDir:   "jenkins",
+			TestFiles: []string{"Jenkinsfile"},
+		},
+		{
 			Name:      "Vercel",
 			Detector:  &detectors.VercelDetector{},
 			TestDir:   "hosting",
@@ -96,6 +102,24 @@ func main() {
 			Detector:  &detectors.FirebaseDetector{},
 			TestDir:   "hosting",
 			TestFiles: []string{"firebase.json"},
+		},
+		{
+			Name:      "Railway",
+			Detector:  &detectors.RailwayDetector{},
+			TestDir:   "hosting",
+			TestFiles: []string{"railway.json"},
+		},
+		{
+			Name:      "Render",
+			Detector:  &detectors.RenderDetector{},
+			TestDir:   "hosting",
+			TestFiles: []string{"render.yaml"},
+		},
+		{
+			Name:      "Fly.io",
+			Detector:  &detectors.FlyIODetector{},
+			TestDir:   "hosting",
+			TestFiles: []string{"fly.toml"},
 		},
 	}
 
