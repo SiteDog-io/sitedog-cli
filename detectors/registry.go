@@ -18,6 +18,7 @@ func GetAllDetectors() []Detector {
 		&GoModDetector{},
 		&CargoDetector{},
 		&DotNetDetector{},
+		&JavaDetector{},
 		&VercelDetector{},
 		&NetlifyDetector{},
 		&HerokuDetector{},
