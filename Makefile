@@ -71,7 +71,7 @@ dev-install:
 dev-uninstall:
 	sudo rm -f /usr/local/bin/sitedog-dev
 
-dev-reinstall: dev-uninstall dev-install
+dev-install!: dev-uninstall dev-install
 
 uninstall:
 	scripts/uninstall.sh
