@@ -68,6 +68,12 @@ func main() {
 			TestFiles: []string{".travis.yml"},
 		},
 		{
+			Name:      "Azure Pipelines",
+			Detector:  &detectors.AzurePipelinesDetector{},
+			TestDir:   "azurepipelines",
+			TestFiles: []string{"azure-pipelines.yml"},
+		},
+		{
 			Name:      "Vercel",
 			Detector:  &detectors.VercelDetector{},
 			TestDir:   "hosting",

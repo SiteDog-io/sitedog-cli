@@ -8,6 +8,7 @@ func GetAllDetectors() []Detector {
 		&GitHubActionsDetector{},
 		&CircleCIDetector{},
 		&TravisCIDetector{},
+		&AzurePipelinesDetector{},
 		&GemfileDetector{},
 		&RequirementsDetector{},
 		&PackageJSONDetector{},
