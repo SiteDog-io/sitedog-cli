@@ -42,7 +42,7 @@ func (n *NetlifyDetector) ShouldRun() bool {
 	return false
 }
 
-func (n *NetlifyDetector) Detect() (*DetectionResult, error) {
+func (n *NetlifyDetector) Detect() ([]*DetectionResult, error) {
 	// Try to get site name from various sources
 	var siteName string
 
@@ -85,10 +85,10 @@ func (n *NetlifyDetector) Detect() (*DetectionResult, error) {
 		hostingURL = "https://app.netlify.com/sites"
 	}
 
-	return &DetectionResult{
+	return []*DetectionResult{{
 		Key:         "hosting",
 		Value:       hostingURL,
 		Description: "Netlify hosting configuration detected",
 		Confidence:  confidence,
-	}, nil
+	}}, nil
 }

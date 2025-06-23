@@ -629,18 +629,20 @@ func handleScan() {
 		}
 
 		fmt.Printf("Running %s detector...\n", detector.Name())
-		result, err := detector.Detect()
+		detectorResults, err := detector.Detect()
 		if err != nil {
 			fmt.Printf("Warning: %s detector failed: %v\n", detector.Name(), err)
 			continue
 		}
 
-		if result != nil {
-			// Check if this key already exists
-			if !keyExistsInConfig(config, result.Key, result.Value) {
-				results = append(results, result)
-			} else {
-				fmt.Printf("Skipping %s: already exists in config\n", result.Key)
+		for _, result := range detectorResults {
+			if result != nil {
+				// Check if this key already exists
+				if !keyExistsInConfig(config, result.Key, result.Value) {
+					results = append(results, result)
+				} else {
+					fmt.Printf("Skipping %s: already exists in config\n", result.Key)
+				}
 			}
 		}
 	}
@@ -682,26 +684,52 @@ func handleScan() {
 
 
 func keyExistsInConfig(config map[string]interface{}, key string, value interface{}) bool {
+	valueStr := fmt.Sprintf("%v", value)
+
 	// Check if there's a direct key
 	if existing, exists := config[key]; exists {
-		if fmt.Sprintf("%v", existing) == fmt.Sprintf("%v", value) {
-			return true
+		existingStr := fmt.Sprintf("%v", existing)
+		if existingStr == valueStr {
+			return true // Exact same key-value pair exists
 		}
+		// Key exists but with different value - this would create duplicate keys
+		// We should prevent this to keep YAML valid
+		return true
 	}
 
-	// Check nested objects for key
+	// Check nested objects for key and value
 	for _, configValue := range config {
 		if nestedMap, ok := configValue.(map[interface{}]interface{}); ok {
 			if existing, exists := nestedMap[key]; exists {
-				if fmt.Sprintf("%v", existing) == fmt.Sprintf("%v", value) {
-					return true
+				existingStr := fmt.Sprintf("%v", existing)
+				if existingStr == valueStr {
+					return true // Exact same key-value pair exists
+				}
+				// Key exists but with different value - prevent duplicate keys
+				return true
+			}
+
+			// Also check if the same value exists under any key in this section
+			for _, nestedValue := range nestedMap {
+				if fmt.Sprintf("%v", nestedValue) == valueStr {
+					return true // Same value already exists
 				}
 			}
 		}
 		if nestedMap, ok := configValue.(map[string]interface{}); ok {
 			if existing, exists := nestedMap[key]; exists {
-				if fmt.Sprintf("%v", existing) == fmt.Sprintf("%v", value) {
-					return true
+				existingStr := fmt.Sprintf("%v", existing)
+				if existingStr == valueStr {
+					return true // Exact same key-value pair exists
+				}
+				// Key exists but with different value - prevent duplicate keys
+				return true
+			}
+
+			// Also check if the same value exists under any key in this section
+			for _, nestedValue := range nestedMap {
+				if fmt.Sprintf("%v", nestedValue) == valueStr {
+					return true // Same value already exists
 				}
 			}
 		}

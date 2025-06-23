@@ -35,7 +35,7 @@ func (h *HerokuDetector) ShouldRun() bool {
 	return false
 }
 
-func (h *HerokuDetector) Detect() (*DetectionResult, error) {
+func (h *HerokuDetector) Detect() ([]*DetectionResult, error) {
 	confidence := 0.0
 	var appName string
 	isHeroku := false
@@ -97,12 +97,12 @@ func (h *HerokuDetector) Detect() (*DetectionResult, error) {
 		hostingURL = "https://dashboard.heroku.com/apps"
 	}
 
-	return &DetectionResult{
+	return []*DetectionResult{{
 		Key:         "hosting",
 		Value:       hostingURL,
 		Description: "Heroku hosting configuration detected",
 		Confidence:  confidence,
-	}, nil
+	}}, nil
 }
 
 // hasHerokuRemote checks if there's a heroku git remote

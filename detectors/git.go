@@ -21,7 +21,7 @@ func (g *GitDetector) ShouldRun() bool {
 	return isGitRepository()
 }
 
-func (g *GitDetector) Detect() (*DetectionResult, error) {
+func (g *GitDetector) Detect() ([]*DetectionResult, error) {
 	originURL, err := getGitOriginURL()
 	if err != nil {
 		return nil, err
@@ -32,12 +32,12 @@ func (g *GitDetector) Detect() (*DetectionResult, error) {
 	}
 
 	repoURL := convertToHTTPSURL(originURL)
-	return &DetectionResult{
+	return []*DetectionResult{{
 		Key:         "repo",
 		Value:       repoURL,
 		Description: "Git repository URL",
 		Confidence:  1.0,
-	}, nil
+	}}, nil
 }
 
 // Helper functions for git operations

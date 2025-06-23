@@ -22,29 +22,29 @@ func (g *GitLabCIDetector) ShouldRun() bool {
 	return err == nil
 }
 
-func (g *GitLabCIDetector) Detect() (*DetectionResult, error) {
+func (g *GitLabCIDetector) Detect() ([]*DetectionResult, error) {
 	// Get git origin URL to construct CI link
 	originURL, err := getGitOriginURL()
 	if err == nil && originURL != "" {
 		repoURL := convertToHTTPSURL(originURL)
 		if strings.Contains(repoURL, "gitlab.com") {
 			ciURL := strings.TrimSuffix(repoURL, "/") + "/-/pipelines"
-			return &DetectionResult{
+			return []*DetectionResult{{
 				Key:         "ci",
 				Value:       ciURL,
 				Description: "GitLab CI pipelines URL",
 				Confidence:  1.0,
-			}, nil
+			}}, nil
 		}
 	}
 
 	// Fallback: just indicate CI is used
-	return &DetectionResult{
+	return []*DetectionResult{{
 		Key:         "ci",
 		Value:       "gitlab-ci",
 		Description: "GitLab CI configuration detected",
 		Confidence:  0.8,
-	}, nil
+	}}, nil
 }
 
 // GitHubActionsDetector detects GitHub Actions configuration
@@ -83,27 +83,27 @@ func (g *GitHubActionsDetector) ShouldRun() bool {
 	return false
 }
 
-func (g *GitHubActionsDetector) Detect() (*DetectionResult, error) {
+func (g *GitHubActionsDetector) Detect() ([]*DetectionResult, error) {
 	// Get git origin URL to construct CI link
 	originURL, err := getGitOriginURL()
 	if err == nil && originURL != "" {
 		repoURL := convertToHTTPSURL(originURL)
 		if strings.Contains(repoURL, "github.com") {
 			ciURL := strings.TrimSuffix(repoURL, "/") + "/actions"
-			return &DetectionResult{
+			return []*DetectionResult{{
 				Key:         "ci",
 				Value:       ciURL,
 				Description: "GitHub Actions URL",
 				Confidence:  1.0,
-			}, nil
+			}}, nil
 		}
 	}
 
 	// Fallback: just indicate CI is used
-	return &DetectionResult{
+	return []*DetectionResult{{
 		Key:         "ci",
 		Value:       "github-actions",
 		Description: "GitHub Actions configuration detected",
 		Confidence:  0.8,
-	}, nil
+	}}, nil
 }

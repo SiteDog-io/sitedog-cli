@@ -4,7 +4,7 @@ package detectors
 type Detector interface {
 	Name() string
 	Description() string
-	Detect() (*DetectionResult, error)
+	Detect() ([]*DetectionResult, error)
 	ShouldRun() bool
 }
 

@@ -46,7 +46,7 @@ func (f *FirebaseDetector) ShouldRun() bool {
 	return false
 }
 
-func (f *FirebaseDetector) Detect() (*DetectionResult, error) {
+func (f *FirebaseDetector) Detect() ([]*DetectionResult, error) {
 	confidence := 0.0
 	var projectID string
 
@@ -119,10 +119,10 @@ func (f *FirebaseDetector) Detect() (*DetectionResult, error) {
 		hostingURL = "https://console.firebase.google.com"
 	}
 
-	return &DetectionResult{
+	return []*DetectionResult{{
 		Key:         "hosting",
 		Value:       hostingURL,
 		Description: "Firebase hosting configuration detected",
 		Confidence:  confidence,
-	}, nil
+	}}, nil
 }

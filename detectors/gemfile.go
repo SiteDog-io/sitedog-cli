@@ -23,7 +23,7 @@ func (g *GemfileDetector) ShouldRun() bool {
 	return err == nil
 }
 
-func (g *GemfileDetector) Detect() (*DetectionResult, error) {
+func (g *GemfileDetector) Detect() ([]*DetectionResult, error) {
 	data, err := ioutil.ReadFile("Gemfile")
 	if err != nil {
 		return nil, err
@@ -65,20 +65,22 @@ func (g *GemfileDetector) Detect() (*DetectionResult, error) {
 		},
 	}
 
-	// Check each monitoring service
+	// Check each monitoring service and collect all found
+	var results []*DetectionResult
 	for _, serviceInfo := range services {
 		patterns := serviceInfo["patterns"].([]string)
 		for _, pattern := range patterns {
 			if strings.Contains(content, pattern) {
-				return &DetectionResult{
+				results = append(results, &DetectionResult{
 					Key:         "monitoring",
 					Value:       serviceInfo["url"].(string),
 					Description: fmt.Sprintf("%s monitoring service detected", serviceInfo["name"].(string)),
 					Confidence:  0.9,
-				}, nil
+				})
+				break // Only add each service once
 			}
 		}
 	}
 
-	return nil, nil
+	return results, nil
 }

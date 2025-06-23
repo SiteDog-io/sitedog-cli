@@ -33,7 +33,7 @@ func (v *VercelDetector) ShouldRun() bool {
 	return false
 }
 
-func (v *VercelDetector) Detect() (*DetectionResult, error) {
+func (v *VercelDetector) Detect() ([]*DetectionResult, error) {
 	// Try to get project name and construct hosting URL
 	var projectName string
 
@@ -73,10 +73,10 @@ func (v *VercelDetector) Detect() (*DetectionResult, error) {
 		hostingURL = "https://vercel.com/dashboard"
 	}
 
-	return &DetectionResult{
+	return []*DetectionResult{{
 		Key:         "hosting",
 		Value:       hostingURL,
 		Description: "Vercel hosting configuration detected",
 		Confidence:  0.9,
-	}, nil
+	}}, nil
 }
