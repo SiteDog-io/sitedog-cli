@@ -44,6 +44,7 @@ jobs:
           - ubuntu-24.04-arm
           - macos-latest
           - macos-13
+          - windows-latest
       fail-fast: false
     runs-on: ${{ matrix.os }}
     retries: 5

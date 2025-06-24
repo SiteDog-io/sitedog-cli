@@ -12,16 +12,16 @@ rm -rf "$OUTPUT_DIR"
 mkdir -p "$OUTPUT_DIR"
 
 # Array of target GOOS/GOARCH platforms
-PLATFORMS="linux/amd64 linux/arm64 darwin/amd64 darwin/arm64"
+PLATFORMS="linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64 windows/arm64"
 
 for PLATFORM in $PLATFORMS; do
   GOOS=$(echo "$PLATFORM" | cut -d/ -f1)
   GOARCH=$(echo "$PLATFORM" | cut -d/ -f2)
   BINARY_NAME="${APP_NAME}-${GOOS}-${GOARCH}"
   # Add .exe for Windows (optional, not used in this case)
-  # if [ "$GOOS" = "windows" ]; then
-  #   BINARY_NAME+=".exe"
-  # fi
+  if [ "$GOOS" = "windows" ]; then
+    BINARY_NAME="${BINARY_NAME}.exe"
+  fi
 
   echo "Building for $GOOS/$GOARCH → $OUTPUT_DIR/$BINARY_NAME"
   env GOOS="$GOOS" GOARCH="$GOARCH" go build -o "$OUTPUT_DIR/$BINARY_NAME" .
