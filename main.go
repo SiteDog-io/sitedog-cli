@@ -31,7 +31,7 @@ const (
 	globalTemplatePath = ".sitedog/demo.html.tpl"
 	authFilePath       = ".sitedog/auth"
 	apiBaseURL         = "https://app.sitedog.io" // Change to your actual API URL
-	Version            = "v0.2.1"
+	Version            = "v0.3.0"
 	exampleConfig      = `# Describe your project with a free key-value format, think simple.
 #
 # Random sample:
@@ -363,8 +363,8 @@ func getAuthToken(apiURL string) (string, error) {
 
 func pushConfig(token, name, content, apiURL, namespace string) error {
 	reqBody, err := json.Marshal(map[string]string{
-		"name":    name,
-		"content": content,
+		"name":      name,
+		"content":   content,
 		"namespace": namespace,
 	})
 	if err != nil {
