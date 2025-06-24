@@ -31,7 +31,7 @@ const (
 	globalTemplatePath = ".sitedog/demo.html.tpl"
 	authFilePath       = ".sitedog/auth"
 	apiBaseURL         = "https://app.sitedog.io" // Change to your actual API URL
-	Version            = "v0.3.1"
+	Version            = "v0.3.2"
 	exampleConfig      = `# Describe your project with a free key-value format, think simple.
 #
 # Random sample:
