@@ -89,6 +89,7 @@ Options for push:
   --title TITLE    Configuration title (default: current directory name)
   --remote URL     Custom API base URL (e.g., localhost:3000, api.example.com)
   --tags TAGS      Comma-separated list of tags (e.g., public,my-project-group,tag3)
+  --namespace NAMESPACE Namespace for the configuration (e.g., my-group)
   SITEDOG_TOKEN    Environment variable for authentication token
 
 Options for render:
@@ -103,6 +104,7 @@ Examples:
   sitedog push --remote api.example.com --title my-project
   sitedog push --remote https://api.example2.com --title my-project
   sitedog push --title my-project --tags public,my-project-group,tag3
+  sitedog push --namespace my-group --title my-project
   SITEDOG_TOKEN=your_token sitedog push --title my-project
   sitedog render --output index.html`)
 }
@@ -238,6 +240,7 @@ func handlePush() {
 	configName := pushFlags.String("title", "", "Configuration title")
 	remoteURL := pushFlags.String("remote", "", "Custom API base URL (e.g., localhost:3000, api.example.com)")
 	tags := pushFlags.String("tags", "", "Comma-separated list of tags (e.g., public,my-project-group,tag3)")
+	namespace := pushFlags.String("namespace", "", "Namespace for the configuration (e.g., my-group)")
 	pushFlags.Parse(os.Args[2:])
 
 	if _, err := os.Stat(*configFile); err != nil {
@@ -281,7 +284,7 @@ func handlePush() {
 	}
 
 	// Send configuration to server
-	err = pushConfig(token, *configName, string(config), apiURL, *tags)
+	err = pushConfig(token, *configName, string(config), apiURL, *tags, *namespace)
 	if err != nil {
 		fmt.Println("Error pushing config:", err)
 		os.Exit(1)
@@ -361,11 +364,12 @@ func getAuthToken(apiURL string) (string, error) {
 	return result.Token, nil
 }
 
-func pushConfig(token, name, content, apiURL, tags string) error {
+func pushConfig(token, name, content, apiURL, tags, namespace string) error {
 	reqBody, err := json.Marshal(map[string]string{
 		"name":    name,
 		"content": content,
 		"tags":    tags,
+		"namespace": namespace,
 	})
 	if err != nil {
 		return fmt.Errorf("error creating request: %v", err)
