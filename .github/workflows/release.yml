@@ -47,7 +47,6 @@ jobs:
           - windows-latest
       fail-fast: false
     runs-on: ${{ matrix.os }}
-    retries: 5
     steps:
       - name: Download and install
         run: |
