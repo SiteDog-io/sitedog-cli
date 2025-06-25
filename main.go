@@ -313,6 +313,10 @@ func getAuthToken(apiURL string) (string, error) {
 	}
 
 	// If file doesn't exist, request authorization
+	fmt.Print("Username: ")
+	var username string
+	fmt.Scanln(&username)
+
 	fmt.Print("Email: ")
 	var email string
 	fmt.Scanln(&email)
@@ -323,6 +327,7 @@ func getAuthToken(apiURL string) (string, error) {
 
 	// Create authorization request
 	reqBody, err := json.Marshal(map[string]string{
+		"username": username,
 		"email":    email,
 		"password": password,
 	})
