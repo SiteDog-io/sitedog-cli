@@ -31,7 +31,7 @@ const (
 	globalTemplatePath = ".sitedog/demo.html.tpl"
 	authFilePath       = ".sitedog/auth"
 	apiBaseURL         = "https://app.sitedog.io" // Change to your actual API URL
-	Version            = "v0.3.2"
+	Version            = "v0.3.3"
 	exampleConfig      = `# Describe your project with a free key-value format, think simple.
 #
 # Random sample:
@@ -397,7 +397,7 @@ func pushConfig(token, name, content, apiURL, namespace string) error {
 		if err != nil {
 			return fmt.Errorf("push failed: %s (could not read error details)", resp.Status)
 		}
-		
+
 		// Try to parse error response
 		var errorResponse struct {
 			Error string `json:"error"`
@@ -405,7 +405,7 @@ func pushConfig(token, name, content, apiURL, namespace string) error {
 		if err := json.Unmarshal(body, &errorResponse); err == nil && errorResponse.Error != "" {
 			return fmt.Errorf("push failed: %s - %s", resp.Status, errorResponse.Error)
 		}
-		
+
 		// Fallback to raw body if JSON parsing fails
 		return fmt.Errorf("push failed: %s - %s", resp.Status, strings.TrimSpace(string(body)))
 	}
