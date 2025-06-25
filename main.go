@@ -392,7 +392,22 @@ func pushConfig(token, name, content, apiURL, namespace string) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("push failed: %s", resp.Status)
+		// Read response body to get error details
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return fmt.Errorf("push failed: %s (could not read error details)", resp.Status)
+		}
+		
+		// Try to parse error response
+		var errorResponse struct {
+			Error string `json:"error"`
+		}
+		if err := json.Unmarshal(body, &errorResponse); err == nil && errorResponse.Error != "" {
+			return fmt.Errorf("push failed: %s - %s", resp.Status, errorResponse.Error)
+		}
+		
+		// Fallback to raw body if JSON parsing fails
+		return fmt.Errorf("push failed: %s - %s", resp.Status, strings.TrimSpace(string(body)))
 	}
 
 	return nil
